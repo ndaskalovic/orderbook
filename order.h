@@ -38,10 +38,9 @@ public:
     {
         if (GetOrderType() != OrderType::MARKET_ORDER)
         {
-            throw std::logic_error(std::format("Order ({}) cannot have its price adjusted, only market orders can", GetOrderId()));
+            throw std::logic_error(std::format("Order ({}, type: {}) cannot have its price adjusted, only market orders can", GetOrderId(), (int)GetOrderType()));
         }
         price_ = price;
-        orderType_ = OrderType::GOOD_TILL_CANCEL;
     };
 
 private:

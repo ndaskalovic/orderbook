@@ -48,6 +48,7 @@ int main() {
         cout << "Order Quantity:\n";
         cin >> quantity;
         Order order((OrderType)type, id, (Side)side, (Quantity)quantity, (Price)price);
+        cout << (int)(OrderType)type << endl;
         id++;
         OrderPointer op = std::make_shared<Order>(order);
         book.AddOrder(op);

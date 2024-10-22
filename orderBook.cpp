@@ -48,7 +48,7 @@ void OrderBook::MatchOrders()
                 TradeInfo{bid->GetOrderId(), bid->GetOrderPrice(), quantity},
                 TradeInfo{ask->GetOrderId(), ask->GetOrderPrice(), quantity}});
         }
-        
+
         if (bids.empty())
         {
             bids_.erase(bidPrice);
@@ -56,6 +56,37 @@ void OrderBook::MatchOrders()
         if (asks.empty())
         {
             asks_.erase(askPrice);
+        }
+        if (asks.empty() && !bids.empty())
+        {
+            auto bid = bids.front();
+            if (bid->GetOrderType() == OrderType::MARKET_ORDER)
+            {
+                auto &[askPrice, asks] = *asks_.begin();
+                bids.pop_front();
+                if (bids.empty())
+                {
+                    bids_.erase(bid->GetOrderPrice());
+                }
+                bid->ToGoodTillCancel(askPrice);
+                bids_[askPrice].push_front(bid);
+            }
+            
+        }
+        if (!asks.empty() && bids.empty())
+        {
+            auto ask = asks.front();
+            if (ask->GetOrderType() == OrderType::MARKET_ORDER)
+            {
+                auto &[bidPrice, bids] = *bids_.begin();
+                asks.pop_front();
+                if (asks.empty())
+                {
+                    asks_.erase(ask->GetOrderPrice());
+                }  
+                ask->ToGoodTillCancel(bidPrice);
+                asks_[bidPrice].push_front(ask);
+            }
         }
     }
 }
