@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 using OrderId = std::uint64_t;
 using Quantity = std::uint32_t;

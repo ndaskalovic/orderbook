@@ -11,17 +11,52 @@
 #include "order.h"
 #include "orderBook.h"
 
+using namespace std;
 
 int main() {
-    Order order1(OrderType::MARKET_ORDER, 1, Side::BUY, 100, 200);
-    Order order2(OrderType::MARKET_ORDER, 2, Side::BUY, 50, 201);
-    OrderPointer op1 = std::make_shared<Order>(order1);
-    OrderPointer op2 = std::make_shared<Order>(order2);
+    OrderBook book;
+    static int id = 0;
 
-    OrderBook orderBook;
+    for (int i = 1; i < 9; i++)
+    {
+        Order order1(OrderType::LIMIT_ORDER, id, Side::BUY, 10*i, 100+(i%4)-5);
+        id++;
+        OrderPointer op1 = std::make_shared<Order>(order1);
+        bool added = book.AddOrder(op1);
+        Order order2(OrderType::LIMIT_ORDER, id, Side::SELL, 10*i, 100+(i%5));
+        id++;
+        OrderPointer op2 = std::make_shared<Order>(order2);
+        added = book.AddOrder(op2);
+    }
+    int type;
+    int side;
+    int quantity;
+    int price;
+    book.PrintBook();
+    while (true)
+    {
+        cout << "Place an order:\n---------------\n";
+        cout << "Order Type (market: 0, limit: 1):\n";
+        cin >> type;
+        cout << "Order Side (BUY: 0, SELL: 1):\n";
+        cin >> side;
+        if (type != 0)
+        {
+            cout << "Order Price:\n";
+            cin >> price;
+        }
+        cout << "Order Quantity:\n";
+        cin >> quantity;
+        Order order((OrderType)type, id, (Side)side, (Quantity)quantity, (Price)price);
+        id++;
+        OrderPointer op = std::make_shared<Order>(order);
+        book.AddOrder(op);
+        cout << "\n\n";
+        book.PrintBook();
+        cout << "\n\n";
+    }
 
-    bool added = orderBook.AddOrder(op1);
-    added = orderBook.AddOrder(op2);
-    orderBook.PrintBids();
+    // book.PrintBids();
+    // book.PrintAsks();
     return 1;
 };

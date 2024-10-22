@@ -2,6 +2,7 @@
 
 #include <list>
 #include <memory>
+#include <format>
 #include "usings.h"
 #include "side.h"
 #include "orderType.h"
@@ -22,7 +23,27 @@ public:
     Side GetOrderSide() const { return side_; }
     Quantity GetOrderQuantity() const { return quantity_; }
     Quantity GetFilledQuantity() const { return filledQuantity_; }
+    Quantity GetRemainingQuantity() const { return quantity_ - filledQuantity_; }
     Price GetOrderPrice() const { return price_; }
+    bool IsFilled() const { return (quantity_ - filledQuantity_) == 0; }
+    void Fill(Quantity quantity)
+    {
+        if (quantity > GetRemainingQuantity())
+        {
+            throw std::logic_error(std::format("Order ({}) cannot be filled more than its remaining quantity", GetOrderId()));
+        }
+        filledQuantity_ += quantity;
+    };
+    void ToGoodTillCancel(Price price)
+    {
+        if (GetOrderType() != OrderType::MARKET_ORDER)
+        {
+            throw std::logic_error(std::format("Order ({}) cannot have its price adjusted, only market orders can", GetOrderId()));
+        }
+        price_ = price;
+        orderType_ = OrderType::GOOD_TILL_CANCEL;
+    };
+
 private:
     OrderType orderType_;
     OrderId orderId_;
