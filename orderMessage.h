@@ -1,11 +1,14 @@
 #pragma once
 
 #include <cstdint>
+#include "usings.h"
+#include "side.h"
+#include "orderType.h"
 
 struct OrderMessage
 {
-    std::uint16_t type;
-    std::uint16_t side;
-    std::uint64_t quantity;
-    std::uint32_t price;
+    OrderType type;
+    Side side;
+    Quantity quantity;
+    Price price;
 };

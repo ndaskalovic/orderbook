@@ -1,6 +1,11 @@
 #include <cstdint>
 #include <thread>
 #include <csignal>
+#include <iostream>
+#include <memory>
+#include <map>
+#include <list>
+#include <unordered_map>
 
 #include "config.h"
 #include "util/CommandOptionParser.h"
@@ -8,6 +13,13 @@
 #include "FragmentAssembler.h"
 #include "concurrent/SleepingIdleStrategy.h"
 #include "orderMessage.h"
+#include "usings.h"
+#include "trade.h"
+#include "tradeInfo.h"
+#include "orderType.h"
+#include "side.h"
+#include "order.h"
+#include "orderBook.h"
 
 using namespace aeron::util;
 using namespace aeron;
@@ -22,6 +34,7 @@ void sigIntHandler(int)
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS(1);
 static const int FRAGMENTS_LIMIT = 20;
 
+OrderBook book;
 
 struct Settings
 {
@@ -35,15 +48,21 @@ fragment_handler_t printStringMessage()
 {
     return [&](const AtomicBuffer &buffer, util::index_t offset, util::index_t length, const Header &header)
     {
+        static int id = 0;
         OrderMessage data = buffer.overlayStruct<OrderMessage>(offset);
+        Order order(data.type, id, data.side, data.quantity, data.price);
+        OrderPointer orderp = std::make_shared<Order>(order);
+        id++;
+        book.AddOrder(orderp);
+
         std::cout
             << "-->"
             // << "--> Message to stream " << header.streamId() << " from session " << header.sessionId()
             // << "(" << length << "@" << offset << ") <<" << " "
             << " Price: " << data.price
             << " Quantity: " << data.quantity
-            << " Side: " << data.side
-            << " Type: " << data.type
+            << " Side: " << (int)data.side
+            << " Type: " <<(int)data.type
             // << ">>"
             << std::endl;
     };
@@ -53,6 +72,7 @@ int main(int argc, char **argv)
 {
     try
     {
+        
         Settings settings;
 
         std::cout << "Subscribing to channel " << settings.channel << " on Stream ID " << settings.streamId << std::endl;

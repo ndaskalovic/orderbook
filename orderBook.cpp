@@ -19,8 +19,6 @@ void OrderBook::MatchOrders()
 
         auto &[bidPrice, bids] = *bids_.begin();
         auto &[askPrice, asks] = *asks_.begin();
-        std::cout << askPrice << std::endl;
-        std::cout << bidPrice << std::endl << std::endl;
 
         if (bidPrice < askPrice)
         {
