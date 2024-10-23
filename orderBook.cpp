@@ -19,6 +19,8 @@ void OrderBook::MatchOrders()
 
         auto &[bidPrice, bids] = *bids_.begin();
         auto &[askPrice, asks] = *asks_.begin();
+        std::cout << askPrice << std::endl;
+        std::cout << bidPrice << std::endl << std::endl;
 
         if (bidPrice < askPrice)
         {
@@ -57,6 +59,7 @@ void OrderBook::MatchOrders()
         {
             asks_.erase(askPrice);
         }
+        // TODO: handle clearing all asks with market buy and then matching back when new limit sell placed above highest cleared price
         if (asks.empty() && !bids.empty())
         {
             auto bid = bids.front();
@@ -68,11 +71,12 @@ void OrderBook::MatchOrders()
                 {
                     bids_.erase(bid->GetOrderPrice());
                 }
-                bid->ToGoodTillCancel(askPrice);
+                bid->UpdatePrice(askPrice);
                 bids_[askPrice].push_front(bid);
             }
             
         }
+        // TODO: vice versa above
         if (!asks.empty() && bids.empty())
         {
             auto ask = asks.front();
@@ -83,8 +87,8 @@ void OrderBook::MatchOrders()
                 if (asks.empty())
                 {
                     asks_.erase(ask->GetOrderPrice());
-                }  
-                ask->ToGoodTillCancel(bidPrice);
+                }
+                ask->UpdatePrice(bidPrice);
                 asks_[bidPrice].push_front(ask);
             }
         }
@@ -105,12 +109,12 @@ bool OrderBook::AddOrder(OrderPointer order)
         if (order->GetOrderSide() == Side::BUY && !asks_.empty())
         {
             const auto &[worstAsk, _] = *asks_.begin();
-            order->ToGoodTillCancel(worstAsk);
+            order->UpdatePrice(worstAsk);
         }
         if (order->GetOrderSide() == Side::SELL && !bids_.empty())
         {
             const auto &[worstBid, _] = *bids_.begin();
-            order->ToGoodTillCancel(worstBid);
+            order->UpdatePrice(worstBid);
         }
     }
 
@@ -184,6 +188,7 @@ bool OrderBook::CanFill(OrderPointer order)
 {
     if (order->GetOrderSide() == Side::BUY)
     {
+        // TODO: add levelinfo to quickly compute vol at each level and evaluate this
         if (asks_.empty())
             return false;
         return true;

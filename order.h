@@ -6,6 +6,7 @@
 #include "usings.h"
 #include "side.h"
 #include "orderType.h"
+// #include <Aeron.h>
 
 class Order
 {
@@ -34,7 +35,7 @@ public:
         }
         filledQuantity_ += quantity;
     };
-    void ToGoodTillCancel(Price price)
+    void UpdatePrice(Price price)
     {
         if (GetOrderType() != OrderType::MARKET_ORDER)
         {

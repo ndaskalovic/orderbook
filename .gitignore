@@ -1,3 +1,9 @@
 main
+client
+server
 *.sh
 .vscode
+build/
+debug/
+CMakeLists.txt
+aeron-test/

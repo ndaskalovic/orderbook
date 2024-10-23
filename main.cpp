@@ -3,6 +3,7 @@
 #include <map>
 #include <list>
 #include <unordered_map>
+#include <Aeron.h>
 #include "usings.h"
 #include "trade.h"
 #include "tradeInfo.h"
@@ -12,11 +13,17 @@
 #include "orderBook.h"
 
 using namespace std;
+// using namespace aeron;
+using namespace aeron::util;
+using namespace aeron;
+
+std::atomic<bool> running(true);
 
 int main() {
     OrderBook book;
     static int id = 0;
-
+    aeron::Context context;
+    std::shared_ptr<Aeron> a = Aeron::connect(context);
     for (int i = 1; i < 9; i++)
     {
         Order order1(OrderType::LIMIT_ORDER, id, Side::BUY, 10*i, 100+(i%4)-5);
@@ -56,8 +63,5 @@ int main() {
         book.PrintBook();
         cout << "\n\n";
     }
-
-    // book.PrintBids();
-    // book.PrintAsks();
     return 1;
 };
