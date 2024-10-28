@@ -1,0 +1,310 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        table,
+        th,
+        td {
+            border: 1px solid black;
+        }
+
+        #container2 {
+            height: calc(100vh - 50px);
+        }
+
+        body {
+            min-height: 700px;
+            min-width: 800px;
+        }
+
+        .pushable {
+            background: hsl(0, 0%, 32%);
+            border-radius: 0px;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            outline-offset: 4px;
+            border-bottom: 1px solid black;
+            border-right: 1px solid black;
+        }
+
+        .front {
+            display: block;
+            padding: 5px 5px;
+            border-radius: 0px;
+            font-size: 1.25rem;
+            background: hsl(217, 86%, 43%);
+            color: black;
+            border: 1px solid black;
+            transform: translateY(-4px) translateX(-2px);
+            
+        }
+
+        .pushable:active .front {
+            transform: translateY(-1px) translateX(-1px);
+        }
+
+    </style>
+</head>
+
+<body class="w-100 h-screen bg-gray-200">
+    <div class="w-full h-[50px] border-2 border-red-900 flex items-center justify-center relative">
+        <div class="font-bold text-xl">Orderbook</div>
+        <div class="stats absolute right-4">Throughput: 19123.21 orders/sec</div>
+    </div>
+    <div class="grid grid-rows-1 grid-cols-3 w-full" id="container2">
+        <div class="border-2 border-black row-span-1 col-span-1">
+            <div class="h-[40px] grid grid-cols-3 grid-rows-1 bg-gray-300">
+                <div class="col-span-1 border border-black text-center font-bold">
+                    Price
+                </div>
+                <div class="col-span-1 border border-black text-center font-bold">
+                    Direction
+                </div>
+                <div class="col-span-1 border border-black text-center font-bold">
+                    Type
+                </div>
+            </div>
+            <div class="h-[97%]">
+                <table class="w-full">
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-green-600">Buy</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/3">100</td>
+                        <td class="w-1/3 text-red-600">Sell</td>
+                        <td class="w-1/3">Market</td>
+                    </tr>
+
+                </table>
+            </div>
+        </div>
+        <div class="border-2 border-black row-span-1 col-span-2 grid grid-rows-6">
+            <div class="row-span-4 border-2 border-black">
+            </div>
+            <div class="row-span-2 border-2 border-black flex items-center">
+                <button class="pushable mx-auto" type="button"><span class="front bg-green-600">Flood Buys</span></button>
+                <button class="pushable mx-auto" type="button"><span class="front bg-red-600">Flood Sells</span></button>
+                <button class="pushable mx-auto" type="button"><span class="front bg-blue-500">Volume</span></button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

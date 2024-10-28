@@ -48,23 +48,23 @@ fragment_handler_t printStringMessage()
 {
     return [&](const AtomicBuffer &buffer, util::index_t offset, util::index_t length, const Header &header)
     {
-        static int id = 0;
+        static long id = 0ll;
         OrderMessage data = buffer.overlayStruct<OrderMessage>(offset);
         Order order(data.type, id, data.side, data.quantity, data.price);
         OrderPointer orderp = std::make_shared<Order>(order);
-        id++;
         book.AddOrder(orderp);
+        id++;
 
-        std::cout
-            << "-->"
-            // << "--> Message to stream " << header.streamId() << " from session " << header.sessionId()
-            // << "(" << length << "@" << offset << ") <<" << " "
-            << " Price: " << data.price
-            << " Quantity: " << data.quantity
-            << " Side: " << (int)data.side
-            << " Type: " <<(int)data.type
-            // << ">>"
-            << std::endl;
+        // std::cout
+        //     << "-->"
+        //     << "--> Message to stream " << header.streamId() << " from session " << header.sessionId()
+        //     << "(" << length << "@" << offset << ") <<" << " "
+        //     << " Price: " << data.price
+        //     << " Quantity: " << data.quantity
+        //     << " Side: " << (int)data.side
+        //     << " Type: " <<(int)data.type
+        //     // << ">>"
+        //     << std::endl;
     };
 }
 
