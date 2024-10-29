@@ -112,6 +112,11 @@ int main(int argc, char **argv)
                 {
                     std::cout << "No active subscribers detected" << std::endl;
                 }
+                // if (settings.lingerTimeoutMs > 0)
+                // {
+                //     std::cout << "Lingering for " << settings.lingerTimeoutMs << " milliseconds." << std::endl;
+                //     std::this_thread::sleep_for(std::chrono::milliseconds(settings.lingerTimeoutMs));
+                // }
             }
         }
 

@@ -1,0 +1,266 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+    <style>
+        table,
+        th,
+        td {
+            border: 1px solid black;
+        }
+
+        #container2 {
+            height: calc(100vh - 50px);
+            min-height: 800px;
+        }
+
+        body {
+            height: 100%;
+            width: 100%;
+            min-height: 700px;
+            min-width: 800px;
+        }
+
+        .pushable {
+            background: hsl(0, 0%, 32%);
+            border-radius: 0px;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            outline-offset: 4px;
+            border-bottom: 1px solid black;
+            border-right: 1px solid black;
+        }
+
+        .front {
+            display: block;
+            padding: 5px 5px;
+            border-radius: 0px;
+            font-size: 1.25rem;
+            background: hsl(217, 86%, 43%);
+            color: black;
+            border: 1px solid black;
+            transform: translateY(-4px) translateX(-2px);
+            
+        }
+
+        .pushable:active .front {
+            transform: translateY(-1px) translateX(-1px);
+        }
+
+    </style>
+</head>
+
+<body class="bg-gray-200">
+    <div class="w-full h-[50px] border-2 border-black flex items-center justify-center relative">
+        <div class="font-bold text-xl">Orderbook</div>
+        <div class="stats absolute right-4">Throughput: 19123.21 orders/sec</div>
+    </div>
+    <div class="grid grid-rows-1 grid-cols-3 w-full" id="container2">
+        <div class="border-2 border-black row-span-1 col-span-1">
+            <div class="h-[40px] grid grid-cols-4 grid-rows-1 bg-gray-300">
+                <div class="col-span-1 border border-black text-center font-bold">
+                    Price
+                </div>
+                <div class="col-span-1 border border-black text-center font-bold">
+                    Direction
+                </div>
+                <div class="col-span-1 border border-black text-center font-bold">
+                    Quantity
+                </div>
+                <div class="col-span-1 border border-black text-center font-bold">
+                    Type
+                </div>
+            </div>
+            <div class="h-[97%]">
+                <table class="w-full">
+                    <tr>
+                        <td class="w-1/4">100</td>
+                        <td class="w-1/4 text-green-600">Buy</td>
+                        <td class="w-1/4">10</td>
+                        <td class="w-1/4">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/4">100</td>
+                        <td class="w-1/4 text-red-600">Sell</td>
+                        <td class="w-1/4">10</td>
+                        <td class="w-1/4">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/4">100</td>
+                        <td class="w-1/4 text-green-600">Buy</td>
+                        <td class="w-1/4">10</td>
+                        <td class="w-1/4">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/4">100</td>
+                        <td class="w-1/4 text-red-600">Sell</td>
+                        <td class="w-1/4">10</td>
+                        <td class="w-1/4">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/4">100</td>
+                        <td class="w-1/4 text-green-600">Buy</td>
+                        <td class="w-1/4">10</td>
+                        <td class="w-1/4">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/4">100</td>
+                        <td class="w-1/4 text-red-600">Sell</td>
+                        <td class="w-1/4">10</td>
+                        <td class="w-1/4">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/4">100</td>
+                        <td class="w-1/4 text-green-600">Buy</td>
+                        <td class="w-1/4">10</td>
+                        <td class="w-1/4">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/4">100</td>
+                        <td class="w-1/4 text-red-600">Sell</td>
+                        <td class="w-1/4">10</td>
+                        <td class="w-1/4">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/4">100</td>
+                        <td class="w-1/4 text-green-600">Buy</td>
+                        <td class="w-1/4">10</td>
+                        <td class="w-1/4">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/4">100</td>
+                        <td class="w-1/4 text-red-600">Sell</td>
+                        <td class="w-1/4">10</td>
+                        <td class="w-1/4">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/4">100</td>
+                        <td class="w-1/4 text-green-600">Buy</td>
+                        <td class="w-1/4">10</td>
+                        <td class="w-1/4">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/4">100</td>
+                        <td class="w-1/4 text-red-600">Sell</td>
+                        <td class="w-1/4">10</td>
+                        <td class="w-1/4">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/4">100</td>
+                        <td class="w-1/4 text-green-600">Buy</td>
+                        <td class="w-1/4">10</td>
+                        <td class="w-1/4">Market</td>
+                    </tr>
+                    <tr>
+                        <td class="w-1/4">100</td>
+                        <td class="w-1/4 text-red-600">Sell</td>
+                        <td class="w-1/4">10</td>
+                        <td class="w-1/4">Market</td>
+                    </tr>
+                    
+
+                </table>
+            </div>
+        </div>
+        <div class="border-2 border-black row-span-1 col-span-2 grid grid-rows-6 h-full">
+            <div class="row-span-4 border-2 border-black content-center h-full">
+                <div id="tester" class="w-full h-full"></div>
+            </div>
+            <div class="row-span-2 border-2 border-black flex items-center">
+                <button class="pushable mx-auto" type="button"><span class="front bg-green-600">Flood Buys</span></button>
+                <button class="pushable mx-auto" type="button"><span class="front bg-red-600">Flood Sells</span></button>
+                <button class="pushable mx-auto" type="button"><span class="front bg-blue-500">Volume</span></button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Initial trace data
+            var trace1 = {
+                x: [],
+                y: [],
+                mode: 'lines+markers',
+                line: { color: 'rgba(31,119,180,1)' },
+                xaxis: 'x',
+                yaxis: 'y',
+                type: 'scatter'
+            };
+
+            var data = [trace1];
+
+            let currentTime = new Date().getTime();
+            var layout = {
+                dragmode: 'pan',
+                paper_bgcolor: "#e5e7eb",
+                plot_bgcolor: "#e5e7eb",
+                autosize: true,
+                margin: {
+                    r: 10,
+                    t: 25,
+                    b: 40,
+                    l: 60
+                },
+                showlegend: false,
+                xaxis: {
+                    // autorange: true,
+                    range: [new Date(new Date().getTime()-100000).toISOString().slice(0, 19).replace('T', ' '), new Date().toISOString().slice(0, 19).replace('T', ' ')],
+                    type: 'date',
+                    showgrid: false,
+                    linewidth: 2,
+                    linecolor: 'black',
+                    mirror: true
+                },
+                yaxis: {
+                    autorange: true,
+                    type: 'linear',
+                    linewidth: 2,
+                    linecolor: 'black',
+                    mirror: true
+                }
+            };
+
+            var config = {responsive: true}
+
+            // Create the initial plot
+            Plotly.newPlot('tester', data, layout, config);
+
+            // Simulate live data update every second
+            let value = 115.849998;  // Starting Y-value
+
+            setInterval(function () {
+                // Increment the time by 1 second
+                currentTime += 1000;
+                let newDate = new Date(currentTime).toISOString().slice(0, 19).replace('T', ' ');
+
+                // Generate a new Y value with some random variation
+                value += (Math.random() - 0.5) * 0.5;
+
+                // Append new values to the trace1 data
+                trace1.x.push(newDate);
+                trace1.y.push(value);
+
+                // Update the chart with new data
+                const startTime = new Date(currentTime - 60 * 1000).toISOString();
+                const endTime = new Date(currentTime + 10 * 1000).toISOString();
+                Plotly.update('tester', {
+                    x: [trace1.x],
+                    y: [trace1.y]
+                });
+                Plotly.relayout('tester', {
+                    'xaxis.range': [startTime, endTime]  // Set the range to the last 60 minutes
+                });
+            }, 1000);
+            window.onresize = function () {
+                    Plotly.relayout('tester', {
+                        autosize:true
+                    },
+                );
+                };
+    </script>
+</body>
+
+</html>
