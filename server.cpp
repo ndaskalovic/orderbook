@@ -6,6 +6,7 @@
 #include <map>
 #include <list>
 #include <unordered_map>
+#include <sqlite3.h>
 
 #include "config.h"
 #include "util/CommandOptionParser.h"
@@ -25,6 +26,7 @@ using namespace aeron::util;
 using namespace aeron;
 
 std::atomic<bool> running(true);
+std::shared_ptr<int> oid = std::make_shared<int>(0);
 
 void sigIntHandler(int)
 {
@@ -35,6 +37,7 @@ static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS(1);
 static const int FRAGMENTS_LIMIT = 20;
 
 OrderBook book;
+// std::atomic<int> id(0);
 
 struct Settings
 {
@@ -48,28 +51,38 @@ fragment_handler_t printStringMessage()
 {
     return [&](const AtomicBuffer &buffer, util::index_t offset, util::index_t length, const Header &header)
     {
-        static int id = 0;
         OrderMessage data = buffer.overlayStruct<OrderMessage>(offset);
-        Order order(data.type, id, data.side, data.quantity, data.price);
+        Order order(data.type, *oid, data.side, data.quantity, data.price);
         OrderPointer orderp = std::make_shared<Order>(order);
-        id++;
-        book.AddOrder(orderp);
+        if (book.AddOrder(orderp))
+            (*oid)++;
 
-        std::cout
-            << "-->"
-            // << "--> Message to stream " << header.streamId() << " from session " << header.sessionId()
-            // << "(" << length << "@" << offset << ") <<" << " "
-            << " Price: " << data.price
-            << " Quantity: " << data.quantity
-            << " Side: " << (int)data.side
-            << " Type: " <<(int)data.type
-            // << ">>"
-            << std::endl;
+        // std::cout
+        //     << "-->"
+        //     << " Price: " << data.price
+        //     << " Quantity: " << data.quantity
+        //     << " Side: " << (int)data.side
+        //     << " Type: " <<(int)data.type
+        //     << std::endl;
     };
 }
 
 int main(int argc, char **argv)
 {
+    std::shared_ptr<std::thread> dbThread;
+    Price startPrice(100);
+    for (int i = 1; i < 20; i++)
+    {
+        Order buy = Order(OrderType::LIMIT_ORDER, *oid, Side::BUY, rand() % 20000 + 1000, startPrice - i);
+        OrderPointer buyPointer = std::make_shared<Order>(buy);
+        book.AddOrder(buyPointer);
+        (*oid)++;
+        Order sell = Order(OrderType::LIMIT_ORDER, *oid, Side::SELL, rand() % 20000 + 1000, startPrice + i);
+        OrderPointer sellPointer = std::make_shared<Order>(sell);
+        book.AddOrder(sellPointer);
+        (*oid)++;
+    }
+
     try
     {
         
@@ -122,6 +135,33 @@ int main(int argc, char **argv)
         FragmentAssembler fragmentAssembler(printStringMessage());
         fragment_handler_t handler = fragmentAssembler.handler();
         SleepingIdleStrategy idleStrategy(IDLE_SLEEP_MS);
+
+        Subscription &subscriptionRef = *subscription;
+
+        dbThread = std::make_shared<std::thread>(
+            [&]()
+            {
+                static int idcount = 0;
+                while (running)
+                {
+                    // book.PrintBook();
+                    std::cout << "Price: " << book.GetCurrentPrice() << ", Volume: " << *oid - idcount << "\n\n";
+                    idcount = *oid;
+                    std::this_thread::sleep_for(std::chrono::seconds(2));
+                }
+            });
+
+        aeron::util::OnScopeExit tidy(
+            [&]()
+            {
+                running = false;
+
+                if (nullptr != dbThread && dbThread->joinable())
+                {
+                    dbThread->join();
+                    dbThread = nullptr;
+                }
+            });
 
         while (running)
         {

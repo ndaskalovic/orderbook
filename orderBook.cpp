@@ -57,13 +57,14 @@ void OrderBook::MatchOrders()
         {
             asks_.erase(askPrice);
         }
-        // TODO: handle clearing all asks with market buy and then matching back when new limit sell placed above highest cleared price
-        if (asks.empty() && !bids.empty())
+        if (!asks_.empty() && !bids_.empty())
         {
+            auto &[bidPrice, bids] = *bids_.begin();
+            auto &[askPrice, asks] = *asks_.begin();
             auto bid = bids.front();
+            auto ask = asks.front();
             if (bid->GetOrderType() == OrderType::MARKET_ORDER)
             {
-                auto &[askPrice, asks] = *asks_.begin();
                 bids.pop_front();
                 if (bids.empty())
                 {
@@ -72,15 +73,8 @@ void OrderBook::MatchOrders()
                 bid->UpdatePrice(askPrice);
                 bids_[askPrice].push_front(bid);
             }
-            
-        }
-        // TODO: vice versa above
-        if (!asks.empty() && bids.empty())
-        {
-            auto ask = asks.front();
-            if (ask->GetOrderType() == OrderType::MARKET_ORDER)
+            else if (ask->GetOrderType() == OrderType::MARKET_ORDER)
             {
-                auto &[bidPrice, bids] = *bids_.begin();
                 asks.pop_front();
                 if (asks.empty())
                 {
@@ -109,10 +103,20 @@ bool OrderBook::AddOrder(OrderPointer order)
             const auto &[worstAsk, _] = *asks_.begin();
             order->UpdatePrice(worstAsk);
         }
+        else if (order->GetOrderSide() == Side::BUY && asks_.empty())
+        {
+            const auto &[topBid, _] = *bids_.begin();
+            order->UpdatePrice(topBid);
+        }
         if (order->GetOrderSide() == Side::SELL && !bids_.empty())
         {
             const auto &[worstBid, _] = *bids_.begin();
             order->UpdatePrice(worstBid);
+        }
+        else if (order->GetOrderSide() == Side::SELL && bids_.empty())
+        {
+            const auto &[topAsk, _] = *asks_.begin();
+            order->UpdatePrice(topAsk);
         }
     }
 

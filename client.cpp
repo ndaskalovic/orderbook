@@ -77,9 +77,9 @@ int main(int argc, char **argv)
             for (std::int64_t i = 0; i < nOrders && running; i++)
             {
                 data.price = 100;
-                data.quantity = 10 + i;
+                data.quantity = 1;
                 data.side = (Side)(i % 2);
-                data.type = (OrderType)((i + 1) % 2);
+                data.type = OrderType::MARKET_ORDER;
 
                 const std::int64_t result = publication->offer(srcBuffer, 0, msgLength);
 
