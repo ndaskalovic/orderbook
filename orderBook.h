@@ -22,4 +22,5 @@ public:
     void PrintBook();
     bool CanFill(OrderPointer order);
     void MatchOrders();
+    Price GetCurrentPrice();
 };

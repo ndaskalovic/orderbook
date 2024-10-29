@@ -62,6 +62,7 @@ int main() {
         cout << "\n\n";
         book.PrintBook();
         cout << "\n\n";
+        cout << "Current Price: " << book.GetCurrentPrice() << "\n\n";
     }
     return 1;
 };

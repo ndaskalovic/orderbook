@@ -186,7 +186,7 @@ bool OrderBook::CanFill(OrderPointer order)
 {
     if (order->GetOrderSide() == Side::BUY)
     {
-        // TODO: add levelinfo to quickly compute vol at each level and evaluate this
+        // TODO: add levelinfo to quickly compute vol at each level and evaluate this for fill or kill
         if (asks_.empty())
             return false;
         return true;
@@ -200,5 +200,29 @@ bool OrderBook::CanFill(OrderPointer order)
     else
     {
         return false;
+    }
+}
+
+Price OrderBook::GetCurrentPrice()
+{
+    if (!bids_.empty() && !asks_.empty())
+    {
+        auto &[bidPrice, b] = *bids_.begin();
+        auto &[askPrice, a] = *asks_.begin();
+
+        return Price((askPrice + bidPrice) / 2);
+    }
+    else if (!bids_.empty() && asks_.empty())
+    {
+        auto &[bidPrice, _] = *bids_.begin();
+        return bidPrice;
+    }
+    else if (bids_.empty() && !asks_.empty())
+    {
+        auto &[askPrice, _] = *asks_.begin();
+        return askPrice;
+    } else
+    {
+        return Price(1);
     }
 }
