@@ -1,5 +1,5 @@
 from typing import Annotated
-
+from starlette.responses import FileResponse
 from fastapi import Depends, FastAPI, Query
 from sqlmodel import Field, Session, SQLModel, create_engine, select, Column
 from sqlalchemy import Integer
@@ -105,3 +105,8 @@ def create_pricevoldata(data: PriceVolData, session: SessionDep) -> PriceVolData
     session.commit()
     session.refresh(data)
     return data
+
+
+@app.get("/")
+def read_index():
+    return FileResponse("index.html")
