@@ -58,7 +58,7 @@
 <body class="bg-gray-200">
     <div class="w-full h-[50px] border-2 border-black flex items-center justify-center relative">
         <div class="font-bold text-xl">Orderbook</div>
-        <div class="stats absolute right-4">Throughput: 19123.21 orders/sec</div>
+        <div class="stats absolute right-4">Throughput: <span id="throughput">0</span> orders/sec</div>
     </div>
     <div class="grid grid-rows-1 grid-cols-3 w-full" id="container2">
         <div class="border-2 border-black row-span-1 col-span-1">
@@ -207,7 +207,6 @@
                 showlegend: false,
                 xaxis: {
                     // autorange: true,
-                    range: [new Date(new Date().getTime()-100000).toISOString().slice(0, 19).replace('T', ' '), new Date().toISOString().slice(0, 19).replace('T', ' ')],
                     type: 'date',
                     showgrid: false,
                     linewidth: 2,
@@ -225,35 +224,45 @@
 
             var config = {responsive: true}
 
-            // Create the initial plot
             Plotly.newPlot('tester', data, layout, config);
-
-            // Simulate live data update every second
-            let value = 115.849998;  // Starting Y-value
+            let lastFetched = "0"
 
             setInterval(function () {
-                // Increment the time by 1 second
-                currentTime += 1000;
-                let newDate = new Date(currentTime).toISOString().slice(0, 19).replace('T', ' ');
 
-                // Generate a new Y value with some random variation
-                value += (Math.random() - 0.5) * 0.5;
+                fetch("http://127.0.0.1:8000/price-vol-data/?startdate=" + lastFetched).then(
+                    response => {
+                        if (!response.ok) {
+                            console.log("Network Error")
+                        }
+                        return response.json()
+                    }
+                ).then(
+                    data => {
+                        data.forEach(element => {
+                            console.log(element.timestamp);
+                            trace1.x.push(element.timestamp);
+                            trace1.y.push(element.price);
+                        });
+                        lastFetched = data[0].timestamp;
+                        document.getElementById("throughput").innerText = data[0].volume
+                    }
+                )
+                const now = lastFetched !== "0" ? new Date(lastFetched) : new Date();
+                const startTime = new Date(now.getTime() - 1000 * 60 * 5).toISOString();
+                const endTime = new Date(now.getTime() + 10 * 1000).toISOString();
 
-                // Append new values to the trace1 data
-                trace1.x.push(newDate);
-                trace1.y.push(value);
+                console.log("Plot Range - Start:", startTime, "End:", endTime);
 
-                // Update the chart with new data
-                const startTime = new Date(currentTime - 60 * 1000).toISOString();
-                const endTime = new Date(currentTime + 10 * 1000).toISOString();
                 Plotly.update('tester', {
                     x: [trace1.x],
                     y: [trace1.y]
                 });
                 Plotly.relayout('tester', {
-                    'xaxis.range': [startTime, endTime]  // Set the range to the last 60 minutes
+                    'xaxis.range': [startTime, endTime]
                 });
             }, 1000);
+
+
             window.onresize = function () {
                     Plotly.relayout('tester', {
                         autosize:true

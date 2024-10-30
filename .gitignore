@@ -1,13 +1,9 @@
-main
-client
-server
 *.sh
 *.db
 .vscode
 venv
 build/
 debug/
-CMakeLists.txt
 aeron-test/
 
 # Created by https://www.toptal.com/developers/gitignore/api/macos,python,c++

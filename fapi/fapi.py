@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, Query
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from datetime import datetime
-import datetime as dt
+from fastapi.middleware.cors import CORSMiddleware
 
 
 class PriceVolData(SQLModel, table=True):
@@ -13,7 +13,7 @@ class PriceVolData(SQLModel, table=True):
     price: int
 
 
-sqlite_file_name = "orderbook.db"
+sqlite_file_name = "../orderbook.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 connect_args = {"check_same_thread": False}
@@ -33,6 +33,14 @@ SessionDep = Annotated[Session, Depends(get_session)]
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.on_event("startup")
 def on_startup():
@@ -44,10 +52,11 @@ def read_heroes(
     session: SessionDep,
     offset: int = 0,
     startdate: datetime | None = None,
-    limit: Annotated[int, Query(le=100)] = 100,
+    limit: Annotated[int, Query(le=1000)] = 1000,
 ) -> list[PriceVolData]:
     query = select(PriceVolData)
-    query = query.offset(offset).limit(limit)
+    query = query.offset(offset).limit(
+        limit).order_by(PriceVolData.timestamp.desc())
     entries = session.exec(query).all()
     if startdate:
         return [entry for entry in entries if entry.timestamp > startdate]

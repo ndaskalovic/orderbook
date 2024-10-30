@@ -1,4 +1,5 @@
 #include <ranges>
+#include <mutex>
 #include "usings.h"
 #include "orderType.h"
 #include "order.h"
@@ -92,6 +93,7 @@ void OrderBook::MatchOrders()
 
 bool OrderBook::AddOrder(OrderPointer order)
 {
+    std::scoped_lock ordersLock{ordermutex_};
     if (orders_.contains(order->GetOrderId()))
         return false;
 

@@ -3,11 +3,12 @@
 #include <list>
 #include <map>
 #include <unordered_map>
+#include <mutex>
 #include <iostream>
-#include "usings.h"
 #include <cstdint>
 // #include "side.h"
 // #include "orderType.h"
+#include "usings.h"
 #include "order.h"
 
 class OrderBook
@@ -17,6 +18,7 @@ private:
     std::map<Price, OrderPointers, std::greater<Price>> bids_;
     std::map<Price, OrderPointers, std::less<Price>> asks_;
     std::uint64_t size_;
+    mutable std::mutex ordermutex_;
 
 public:
     OrderBook() : size_(0) {}
