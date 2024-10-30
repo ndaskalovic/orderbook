@@ -143,33 +143,33 @@ int main(int argc, char **argv)
             [&]()
             {
                 static int idcount = 0;
-                // sqlite3 *DB;
-                // sqlite3_stmt *stmt;
-                // std::string sql_query = "INSERT INTO pricevoldata (timestamp, volume, price) VALUES (?, ?, ?);";
-                // int exit = 0;
-                // exit = sqlite3_open(settings.databasePath, &DB);
-                // if (exit)
-                // {
-                //     std::cerr << "Could not open DB at " << settings.databasePath << std::endl;
-                //     return -1;
-                // }
+                sqlite3 *DB;
+                sqlite3_stmt *stmt;
+                std::string sql_query = "INSERT INTO pricevoldata (timestamp, volume, price) VALUES (?, ?, ?);";
+                int exit = 0;
+                exit = sqlite3_open(settings.databasePath, &DB);
+                if (exit)
+                {
+                    std::cerr << "Could not open DB at " << settings.databasePath << std::endl;
+                    return -1;
+                }
                 while (running)
                 {
                     book.PrintBook();
                     std::cout << "Price: " << book.GetCurrentPrice() << ", Volume: " << oid - idcount << "\n\n";
-                    // sqlite3_prepare(DB, sql_query.c_str(), -1, &stmt, nullptr);
-                    // const auto now = std::chrono::system_clock::now();
-                    // sqlite3_bind_text(stmt, 1, std::format("{:%FT%TZ}", now).c_str(), -1, SQLITE_TRANSIENT);
-                    // sqlite3_bind_int(stmt, 2, *oid - idcount);
-                    // sqlite3_bind_int(stmt, 3, book.GetCurrentPrice());
-                    // sqlite3_step(stmt);
-                    // sqlite3_exec(DB, "COMMIT;", nullptr, nullptr, nullptr);
+                    sqlite3_prepare(DB, sql_query.c_str(), -1, &stmt, nullptr);
+                    const auto now = std::chrono::system_clock::now();
+                    sqlite3_bind_text(stmt, 1, std::format("{:%FT%TZ}", now).c_str(), -1, SQLITE_TRANSIENT);
+                    sqlite3_bind_int(stmt, 2, oid - idcount);
+                    sqlite3_bind_int(stmt, 3, book.GetCurrentPrice());
+                    sqlite3_step(stmt);
+                    sqlite3_exec(DB, "COMMIT;", nullptr, nullptr, nullptr);
                     idcount = oid;
                     // book.PrintBook();
                     std::this_thread::sleep_for(std::chrono::seconds(1));
                 }
-                // sqlite3_finalize(stmt);
-                // sqlite3_close(DB);
+                sqlite3_finalize(stmt);
+                sqlite3_close(DB);
             });
 
         aeron::util::OnScopeExit tidy(

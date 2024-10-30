@@ -59,7 +59,6 @@ TEST_F(OrderBookTest, Size)
         emptyOb.AddOrder(sellp);
         EXPECT_EQ(emptyOb.GetSize(), norders - (i + 1));
     }
-
 }
 TEST_F(OrderBookTest, MatchMarketBuyLimitSell)
 {
