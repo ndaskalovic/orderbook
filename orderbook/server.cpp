@@ -20,13 +20,14 @@
 #include "side.h"
 #include "order.h"
 #include "orderBook.h"
+#include "sqliteConnection.h"
 
 using namespace aeron::util;
 using namespace aeron;
 
 std::atomic<bool> running(true);
 std::atomic<int> oid = 0;
-
+OrderBook book;
 
 void sigIntHandler(int)
 {
@@ -36,17 +37,14 @@ void sigIntHandler(int)
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS(1);
 static const int FRAGMENTS_LIMIT = 20;
 
-OrderBook book;
-
 struct Settings
 {
-    // std::string dirPrefix;
     std::string channel = configuration::DEFAULT_CHANNEL;
     std::int32_t streamId = configuration::DEFAULT_STREAM_ID;
-    const char * databasePath = configuration::DATABASE_PATH;
+    const char *databasePath = configuration::DATABASE_PATH;
 };
 
-fragment_handler_t printStringMessage()
+fragment_handler_t addOrderToBook()
 {
     return [&](const AtomicBuffer &buffer, util::index_t offset, util::index_t length, const Header &header)
     {
@@ -55,17 +53,21 @@ fragment_handler_t printStringMessage()
         OrderPointer orderp = std::make_shared<Order>(order);
         if (book.AddOrder(orderp))
             oid++;
-
-        // std::cout
-        //     << "-->"
-        //     << "--> Message to stream " << header.streamId() << " from session " << header.sessionId()
-        //     << "(" << length << "@" << offset << ") <<" << " "
-        //     << " Price: " << data.price
-        //     << " Quantity: " << data.quantity
-        //     << " Side: " << (int)data.side
-        //     << " Type: " << (int)data.type
-        //     << std::endl;
     };
+}
+
+void dbThreadTask(char *dbPath)
+{
+    static int idcount = 0;
+    DatabaseConnection DB(dbPath);
+    while (running)
+    {
+        std::cout << "Price: " << book.GetCurrentPrice() << ", Volume: " << oid - idcount << "\n\n";
+        const auto now = std::chrono::system_clock::now();
+        DB.InsertPriceVolData(std::format("{:%FT%TZ}", now).c_str(), oid - idcount, book.GetCurrentPrice());
+        idcount = oid;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 }
 
 int main(int argc, char **argv)
@@ -86,7 +88,6 @@ int main(int argc, char **argv)
 
     try
     {
-        
         Settings settings;
 
         std::cout << "Subscribing to channel " << settings.channel << " on Stream ID " << settings.streamId << std::endl;
@@ -133,44 +134,13 @@ int main(int argc, char **argv)
             << (channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE ? "ACTIVE" : std::to_string(channelStatus))
             << std::endl;
 
-        FragmentAssembler fragmentAssembler(printStringMessage());
+        FragmentAssembler fragmentAssembler(addOrderToBook());
         fragment_handler_t handler = fragmentAssembler.handler();
         SleepingIdleStrategy idleStrategy(IDLE_SLEEP_MS);
 
         Subscription &subscriptionRef = *subscription;
 
-        dbThread = std::make_shared<std::thread>(
-            [&]()
-            {
-                static int idcount = 0;
-                sqlite3 *DB;
-                sqlite3_stmt *stmt;
-                std::string sql_query = "INSERT INTO pricevoldata (timestamp, volume, price) VALUES (?, ?, ?);";
-                int exit = 0;
-                exit = sqlite3_open(settings.databasePath, &DB);
-                if (exit)
-                {
-                    std::cerr << "Could not open DB at " << settings.databasePath << std::endl;
-                    return -1;
-                }
-                while (running)
-                {
-                    book.PrintBook();
-                    std::cout << "Price: " << book.GetCurrentPrice() << ", Volume: " << oid - idcount << "\n\n";
-                    sqlite3_prepare(DB, sql_query.c_str(), -1, &stmt, nullptr);
-                    const auto now = std::chrono::system_clock::now();
-                    sqlite3_bind_text(stmt, 1, std::format("{:%FT%TZ}", now).c_str(), -1, SQLITE_TRANSIENT);
-                    sqlite3_bind_int(stmt, 2, oid - idcount);
-                    sqlite3_bind_int(stmt, 3, book.GetCurrentPrice());
-                    sqlite3_step(stmt);
-                    sqlite3_exec(DB, "COMMIT;", nullptr, nullptr, nullptr);
-                    idcount = oid;
-                    // book.PrintBook();
-                    std::this_thread::sleep_for(std::chrono::seconds(1));
-                }
-                sqlite3_finalize(stmt);
-                sqlite3_close(DB);
-            });
+        dbThread = std::make_shared<std::thread>(dbThreadTask, settings.databasePath);
 
         aeron::util::OnScopeExit tidy(
             [&]()
