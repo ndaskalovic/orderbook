@@ -10,5 +10,5 @@ namespace configuration
     const static std::int32_t DEFAULT_PRICE_DATA_STREAM_ID = 1002;
     const static int DEFAULT_LINGER_TIMEOUT_MS = 0;
     const static int DEFAULT_FRAGMENT_COUNT_LIMIT = 10;
-    const static char * DATABASE_PATH = "orderbook.db";
+    const static char * DATABASE_PATH = "../orderbook.db";
 }

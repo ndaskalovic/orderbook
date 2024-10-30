@@ -85,7 +85,7 @@ int main(int argc, char **argv)
 
                 if (result > 0)
                 {
-                    // std::cout << "\rSent " << i+1 << "/" << nOrders << std::flush;
+                    std::cout << "\rSent " << i+1 << "/" << nOrders << std::flush;
                 }
                 else if (BACK_PRESSURED == result)
                 {

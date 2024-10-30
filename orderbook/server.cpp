@@ -25,7 +25,8 @@ using namespace aeron::util;
 using namespace aeron;
 
 std::atomic<bool> running(true);
-std::shared_ptr<int> oid = std::make_shared<int>(0);
+std::atomic<int> oid = 0;
+
 
 void sigIntHandler(int)
 {
@@ -36,7 +37,6 @@ static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS(1);
 static const int FRAGMENTS_LIMIT = 20;
 
 OrderBook book;
-// std::atomic<int> id(0);
 
 struct Settings
 {
@@ -51,17 +51,19 @@ fragment_handler_t printStringMessage()
     return [&](const AtomicBuffer &buffer, util::index_t offset, util::index_t length, const Header &header)
     {
         OrderMessage data = buffer.overlayStruct<OrderMessage>(offset);
-        Order order(data.type, *oid, data.side, data.quantity, data.price);
+        Order order(data.type, oid, data.side, data.quantity, data.price);
         OrderPointer orderp = std::make_shared<Order>(order);
         if (book.AddOrder(orderp))
-            (*oid)++;
+            oid++;
 
         // std::cout
         //     << "-->"
+        //     << "--> Message to stream " << header.streamId() << " from session " << header.sessionId()
+        //     << "(" << length << "@" << offset << ") <<" << " "
         //     << " Price: " << data.price
         //     << " Quantity: " << data.quantity
         //     << " Side: " << (int)data.side
-        //     << " Type: " <<(int)data.type
+        //     << " Type: " << (int)data.type
         //     << std::endl;
     };
 }
@@ -72,14 +74,14 @@ int main(int argc, char **argv)
     Price startPrice(100);
     for (int i = 1; i < 20; i++)
     {
-        Order buy = Order(OrderType::LIMIT_ORDER, *oid, Side::BUY, rand() % 20000 + 100000, startPrice - i);
+        Order buy = Order(OrderType::LIMIT_ORDER, oid, Side::BUY, rand() % 20000 + 100000, startPrice - i);
         OrderPointer buyPointer = std::make_shared<Order>(buy);
         book.AddOrder(buyPointer);
-        (*oid)++;
-        Order sell = Order(OrderType::LIMIT_ORDER, *oid, Side::SELL, rand() % 20000 + 100000, startPrice + i);
+        oid++;
+        Order sell = Order(OrderType::LIMIT_ORDER, oid, Side::SELL, rand() % 20000 + 100000, startPrice + i);
         OrderPointer sellPointer = std::make_shared<Order>(sell);
         book.AddOrder(sellPointer);
-        (*oid)++;
+        oid++;
     }
 
     try
@@ -153,8 +155,8 @@ int main(int argc, char **argv)
                 // }
                 while (running)
                 {
-                    // book.PrintBook();
-                    std::cout << "Price: " << book.GetCurrentPrice() << ", Volume: " << *oid - idcount << "\n\n";
+                    book.PrintBook();
+                    std::cout << "Price: " << book.GetCurrentPrice() << ", Volume: " << oid - idcount << "\n\n";
                     // sqlite3_prepare(DB, sql_query.c_str(), -1, &stmt, nullptr);
                     // const auto now = std::chrono::system_clock::now();
                     // sqlite3_bind_text(stmt, 1, std::format("{:%FT%TZ}", now).c_str(), -1, SQLITE_TRANSIENT);
@@ -162,8 +164,8 @@ int main(int argc, char **argv)
                     // sqlite3_bind_int(stmt, 3, book.GetCurrentPrice());
                     // sqlite3_step(stmt);
                     // sqlite3_exec(DB, "COMMIT;", nullptr, nullptr, nullptr);
-                    idcount = *oid;
-                    book.PrintBook();
+                    idcount = oid;
+                    // book.PrintBook();
                     std::this_thread::sleep_for(std::chrono::seconds(1));
                 }
                 // sqlite3_finalize(stmt);

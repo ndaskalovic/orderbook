@@ -93,7 +93,7 @@ void OrderBook::MatchOrders()
 
 bool OrderBook::AddOrder(OrderPointer order)
 {
-    std::scoped_lock ordersLock{ordermutex_};
+    std::scoped_lock bookLock{ordermutex_};
     if (orders_.contains(order->GetOrderId()))
         return false;
 
@@ -170,6 +170,7 @@ void OrderBook::PrintAsks()
 
 void OrderBook::PrintBook()
 {
+    std::scoped_lock bookLock{ordermutex_};
     for (const auto &pair : asks_ | std::views::reverse)
     {
         int q = 0;
@@ -214,6 +215,7 @@ bool OrderBook::CanFill(OrderPointer order)
 
 Price OrderBook::GetCurrentPrice()
 {
+    std::scoped_lock bookLock{ordermutex_};
     if (!bids_.empty() && !asks_.empty())
     {
         auto &[bidPrice, b] = *bids_.begin();
