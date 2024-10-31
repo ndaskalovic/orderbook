@@ -9,6 +9,7 @@
 #include "orderMessage.h"
 #include "orderType.h"
 #include "side.h"
+#include "aeronUtils.h"
 
 using namespace aeron::util;
 using namespace aeron;
@@ -20,48 +21,19 @@ void sigIntHandler(int)
     running = false;
 }
 
-struct Settings
-{
-    std::string channel = configuration::DEFAULT_CHANNEL;
-    std::int32_t streamId = configuration::DEFAULT_STREAM_ID;
-    int lingerTimeoutMs = configuration::DEFAULT_LINGER_TIMEOUT_MS;
-};
-
-typedef std::array<std::uint8_t, 256> buffer_t;
+typedef std::array<std::uint8_t, 16> buffer_t;
 
 int main(int argc, char **argv)
 {
     try
     {
-        Settings settings;
+        Settings settings(configuration::DEFAULT_CHANNEL, configuration::DEFAULT_STREAM_ID, configuration::DATABASE_PATH, configuration::DEFAULT_LINGER_TIMEOUT_MS);
         std::cout << "Publishing to channel " << settings.channel << " on Stream ID " << settings.streamId << std::endl;
 
-        aeron::Context context;
-
-        context.newPublicationHandler(
-            [](const std::string &channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t correlationId)
-            {
-                std::cout << "Publication: " << channel << " " << correlationId << ":" << streamId << ":" << sessionId << std::endl;
-            });
-
-        std::shared_ptr<Aeron> aeron = Aeron::connect(context);
+        AeronPublication aeronPublication = connectToAeronPublication(settings);
         signal(SIGINT, sigIntHandler);
-        // add the publication to start the process
-        std::int64_t id = aeron->addPublication(settings.channel, settings.streamId);
 
-        std::shared_ptr<Publication> publication = aeron->findPublication(id);
-        // wait for the publication to be valid
-        while (!publication)
-        {
-            std::this_thread::yield();
-            publication = aeron->findPublication(id);
-        }
-
-        const std::int64_t channelStatus = publication->channelStatus();
-
-        std::cout << "Publication channel status (id=" << publication->channelStatusId() << ") "
-                  << (channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE ? "ACTIVE" : std::to_string(channelStatus))
-                  << std::endl;
+        const std::int64_t channelStatus = aeronPublication.publication->channelStatus();
 
         AERON_DECL_ALIGNED(buffer_t buffer, 32);
         concurrent::AtomicBuffer srcBuffer(&buffer[0], buffer.size());
@@ -69,7 +41,6 @@ int main(int argc, char **argv)
         long msgLength = sizeof(data);
         long nOrders;
 
-        // std::this_thread::sleep_for(std::chrono::seconds(2));
         while (running)
         {
             std::cout << "\n\nEnter how many order to submit: ";
@@ -81,11 +52,11 @@ int main(int argc, char **argv)
                 data.side = (Side)(i % 2);
                 data.type = OrderType::MARKET_ORDER;
 
-                const std::int64_t result = publication->offer(srcBuffer, 0, msgLength);
+                const std::int64_t result = aeronPublication.publication->offer(srcBuffer, 0, msgLength);
 
                 if (result > 0)
                 {
-                    std::cout << "\rSent " << i+1 << "/" << nOrders << std::flush;
+                    std::cout << "\rSent " << i + 1 << "/" << nOrders << std::flush;
                 }
                 else if (BACK_PRESSURED == result)
                 {
@@ -108,7 +79,7 @@ int main(int argc, char **argv)
                     std::cout << "\nOffer failed due to unknown reason " << result << std::endl;
                 }
 
-                if (!publication->isConnected())
+                if (!aeronPublication.publication->isConnected())
                 {
                     std::cout << "No active subscribers detected" << std::endl;
                 }
@@ -121,7 +92,6 @@ int main(int argc, char **argv)
         }
 
         std::cout << "Done sending." << std::endl;
-
     }
     catch (const SourcedException &e)
     {
