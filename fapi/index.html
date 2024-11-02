@@ -62,24 +62,17 @@
     </div>
     <div class="grid grid-rows-1 grid-cols-3 w-full" id="container2">
         <div class="border-2 border-black row-span-1 col-span-1">
-            <div class="h-[40px] grid grid-cols-4 grid-rows-1 bg-gray-300">
-                <div class="col-span-1 border border-black text-center font-bold">
-                    Price
-                </div>
-                <div class="col-span-1 border border-black text-center font-bold">
-                    Direction
-                </div>
-                <div class="col-span-1 border border-black text-center font-bold">
-                    Quantity
-                </div>
-                <div class="col-span-1 border border-black text-center font-bold">
-                    Type
-                </div>
-            </div>
-            <div class="h-[97%]">
+            <div class="h-full overflow-y-auto">
                 <table class="w-full">
+                    <thead class="sticky top-0 border border-b border-black">
+                        <tr>
+                            <th class="col-span-1 bg-gray-300 border border-black text-center font-bold">Price</th>
+                            <th class="col-span-1 bg-gray-300 border border-black text-center font-bold">Direction</th>
+                            <th class="col-span-1 bg-gray-300 border border-black text-center font-bold">Quantity</th>
+                            <th class="col-span-1 bg-gray-300 border border-black text-center font-bold">Type</th>
+                        </tr>
+                    </thead>
                     <tbody id="orders-table">
-
                     </tbody>
                 </table>
             </div>
@@ -142,7 +135,7 @@
             Plotly.newPlot('tester', data, layout, config);
             
             let lastFetched = "0";
-            let lastFetchedOrders = "0";
+            let lastFetchedOrders = (new Date()).toISOString();
 
             setInterval(() => {
                 fetch("http://127.0.0.1:8000/orders/?startdate=" + lastFetchedOrders).then(
