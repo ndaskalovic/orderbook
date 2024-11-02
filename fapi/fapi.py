@@ -1,11 +1,9 @@
 from typing import Annotated
 from starlette.responses import FileResponse
 from fastapi import Depends, FastAPI, Query
-from sqlmodel import Field, Session, SQLModel, create_engine, select, Column
-from sqlalchemy import Integer
+from sqlmodel import Field, Session, SQLModel, create_engine, select
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
-from enum import Enum
 
 
 class PriceVolData(SQLModel, table=True):
