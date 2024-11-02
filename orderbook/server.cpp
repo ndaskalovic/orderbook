@@ -27,6 +27,8 @@ using namespace aeron;
 
 std::atomic<bool> running(true);
 std::atomic<int> oid = 0;
+std::array<OrderPointer, 5> recentOrders;
+std::mutex bufferMutex;
 OrderBook book;
 
 void sigIntHandler(int)
@@ -44,7 +46,10 @@ fragment_handler_t addOrderToBook()
         OrderMessage data = buffer.overlayStruct<OrderMessage>(offset);
         Order order(data.type, oid, data.side, data.quantity, data.price);
         OrderPointer orderp = std::make_shared<Order>(order);
+        // may incur overhead
         if (book.AddOrder(orderp))
+            std::scoped_lock bufLock{bufferMutex};
+            recentOrders[oid % 5] = orderp;
             oid++;
     };
 }
@@ -55,9 +60,23 @@ void dbThreadTask()
     DatabaseConnection DB(configuration::DATABASE_PATH);
     while (running)
     {
-        std::cout << "Price: " << book.GetCurrentPrice() << ", Volume: " << oid - idcount << "\n\n";
         const auto now = std::chrono::system_clock::now();
-        DB.InsertPriceVolData(std::format("{:%FT%TZ}", now).c_str(), oid - idcount, book.GetCurrentPrice());
+        auto fnow = std::format("{:%FT%TZ}", now);
+        DB.InsertPriceVolData(fnow, oid - idcount, book.GetCurrentPrice());
+        if ((oid - idcount) > 5)
+        {
+            std::scoped_lock bufLock{bufferMutex};
+            for (int i = 0; i < 5; i++)
+            {
+                if (recentOrders[i])
+                {
+                    DB.InsertOrderData(fnow, recentOrders[i]->GetOrderType(), recentOrders[i]->GetOrderSide(), recentOrders[i]->GetOrderPrice(), recentOrders[i]->GetOrderQuantity());
+                    // std::cout << "OID: " << oid << ", recent order ID: " << recentOrders[i]->GetOrderId() << "\n";
+                }
+            };
+        }
+        std::cout << "Price: " << book.GetCurrentPrice() << ", Volume: " << oid - idcount << "\n\n";
+
         idcount = oid;
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }

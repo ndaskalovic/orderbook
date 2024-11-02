@@ -15,23 +15,11 @@ class PriceVolData(SQLModel, table=True):
     price: int
 
 
-class OrderSide(int, Enum):
-    BUY = 0
-    SELL = 1
-
-
-class OrderType(int, Enum):
-    MARKET_ORDER = 0
-    LIMIT_ORDER = 1
-    FILL_OR_KILL = 2
-    GOOD_TILL_CANCEL = 3
-
-
-class Order(SQLModel, table=True):
+class OrderData(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     timestamp: datetime = Field(index=True)
-    ordertype: OrderType = Field(sa_column=Column(Integer()))
-    side: OrderSide = Field(sa_column=Column(Integer()))
+    ordertype: int
+    side: int
     price: int
     quantity: int
 
@@ -90,11 +78,14 @@ def read_pricevoldata(
 def read_orders(
     session: SessionDep,
     offset: int = 0,
+    startdate: datetime | None = None,
     limit: Annotated[int, Query(le=1000)] = 1000,
-) -> list[Order]:
-    query = select(Order)
-    query.offset(offset).limit(limit).order_by(Order.timestamp.desc())
+) -> list[OrderData]:
+    query = select(OrderData)
+    query = query.offset(offset).limit(limit).order_by(OrderData.timestamp)
     entries = session.exec(query).all()
+    if startdate:
+        return [entry for entry in entries if entry.timestamp > startdate]
     return entries
 
 

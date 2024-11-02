@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 
         const std::int64_t channelStatus = aeronPublication.publication->channelStatus();
 
-        AERON_DECL_ALIGNED(buffer_t buffer, 32);
+        AERON_DECL_ALIGNED(buffer_t buffer, 16);
         concurrent::AtomicBuffer srcBuffer(&buffer[0], buffer.size());
         OrderMessage &data = srcBuffer.overlayStruct<OrderMessage>(0);
         long msgLength = sizeof(data);

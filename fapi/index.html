@@ -78,92 +78,9 @@
             </div>
             <div class="h-[97%]">
                 <table class="w-full">
-                    <tr>
-                        <td class="w-1/4">100</td>
-                        <td class="w-1/4 text-green-600">Buy</td>
-                        <td class="w-1/4">10</td>
-                        <td class="w-1/4">Market</td>
-                    </tr>
-                    <tr>
-                        <td class="w-1/4">100</td>
-                        <td class="w-1/4 text-red-600">Sell</td>
-                        <td class="w-1/4">10</td>
-                        <td class="w-1/4">Market</td>
-                    </tr>
-                    <tr>
-                        <td class="w-1/4">100</td>
-                        <td class="w-1/4 text-green-600">Buy</td>
-                        <td class="w-1/4">10</td>
-                        <td class="w-1/4">Market</td>
-                    </tr>
-                    <tr>
-                        <td class="w-1/4">100</td>
-                        <td class="w-1/4 text-red-600">Sell</td>
-                        <td class="w-1/4">10</td>
-                        <td class="w-1/4">Market</td>
-                    </tr>
-                    <tr>
-                        <td class="w-1/4">100</td>
-                        <td class="w-1/4 text-green-600">Buy</td>
-                        <td class="w-1/4">10</td>
-                        <td class="w-1/4">Market</td>
-                    </tr>
-                    <tr>
-                        <td class="w-1/4">100</td>
-                        <td class="w-1/4 text-red-600">Sell</td>
-                        <td class="w-1/4">10</td>
-                        <td class="w-1/4">Market</td>
-                    </tr>
-                    <tr>
-                        <td class="w-1/4">100</td>
-                        <td class="w-1/4 text-green-600">Buy</td>
-                        <td class="w-1/4">10</td>
-                        <td class="w-1/4">Market</td>
-                    </tr>
-                    <tr>
-                        <td class="w-1/4">100</td>
-                        <td class="w-1/4 text-red-600">Sell</td>
-                        <td class="w-1/4">10</td>
-                        <td class="w-1/4">Market</td>
-                    </tr>
-                    <tr>
-                        <td class="w-1/4">100</td>
-                        <td class="w-1/4 text-green-600">Buy</td>
-                        <td class="w-1/4">10</td>
-                        <td class="w-1/4">Market</td>
-                    </tr>
-                    <tr>
-                        <td class="w-1/4">100</td>
-                        <td class="w-1/4 text-red-600">Sell</td>
-                        <td class="w-1/4">10</td>
-                        <td class="w-1/4">Market</td>
-                    </tr>
-                    <tr>
-                        <td class="w-1/4">100</td>
-                        <td class="w-1/4 text-green-600">Buy</td>
-                        <td class="w-1/4">10</td>
-                        <td class="w-1/4">Market</td>
-                    </tr>
-                    <tr>
-                        <td class="w-1/4">100</td>
-                        <td class="w-1/4 text-red-600">Sell</td>
-                        <td class="w-1/4">10</td>
-                        <td class="w-1/4">Market</td>
-                    </tr>
-                    <tr>
-                        <td class="w-1/4">100</td>
-                        <td class="w-1/4 text-green-600">Buy</td>
-                        <td class="w-1/4">10</td>
-                        <td class="w-1/4">Market</td>
-                    </tr>
-                    <tr>
-                        <td class="w-1/4">100</td>
-                        <td class="w-1/4 text-red-600">Sell</td>
-                        <td class="w-1/4">10</td>
-                        <td class="w-1/4">Market</td>
-                    </tr>
-                    
+                    <tbody id="orders-table">
 
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -224,7 +141,68 @@
 
             Plotly.newPlot('tester', data, layout, config);
             
-            let lastFetched = "0"
+            let lastFetched = "0";
+            let lastFetchedOrders = "0";
+
+            setInterval(() => {
+                fetch("http://127.0.0.1:8000/orders/?startdate=" + lastFetchedOrders).then(
+                    response => {
+                        if (!response.ok) {
+                            console.log("Network Error")
+                        }
+                        return response.json()
+                    }
+                ).then(
+                    data => {
+                        const tableBody = document.getElementById("orders-table");
+                        // tableBody.innerHTML = "";
+                        data.forEach(element => {
+                            lastFetchedOrders = data[data.length-1].timestamp;
+                            const row = document.createElement("tr");
+                            const idCell = document.createElement("td");
+                            idCell.className = "w-1/4";
+                            idCell.innerText = element.price;
+                            row.appendChild(idCell);
+
+                            // Order Side (e.g., Buy/Sell) with styling
+                            const sideCell = document.createElement("td");
+                            sideCell.className = "w-1/4 " + (element.side === 0 ? "text-green-600" : "text-red-600");
+                            sideCell.innerText = element.side === 0 ? "Buy" : "Sell";
+                            row.appendChild(sideCell);
+
+                            // Quantity
+                            const quantityCell = document.createElement("td");
+                            quantityCell.className = "w-1/4";
+                            quantityCell.innerText = element.quantity;
+                            row.appendChild(quantityCell);
+
+                            // Order Type (e.g., Market/Limit)
+                            const typeCell = document.createElement("td");
+                            typeCell.className = "w-1/4";
+                            switch (element.ordertype) {
+                                case 0:
+                                    typeCell.innerText = "Market";
+                                    break;
+                                case 1:
+                                    typeCell.innerText = "Limit";
+                                    break;
+                                case 2:
+                                    typeCell.innerText = "Fill or Kill";
+                                    break;
+                                case 3:
+                                    typeCell.innerText = "Good Till Cancel";
+                                    break;
+                                default:
+                                    typeCell.innerText = "Unknown";
+                            }
+
+                            row.appendChild(typeCell);
+
+                            tableBody.insertBefore(row, tableBody.firstChild);
+                        });
+                    }
+                )
+            }, 2000);
 
             setInterval(function () {
 
@@ -238,19 +216,17 @@
                 ).then(
                     data => {
                         data.forEach(element => {
-                            console.log(element.timestamp);
                             trace1.x.push(element.timestamp);
                             trace1.y.push(element.price);
+                            lastFetched = data[0].timestamp;
+                            document.getElementById("throughput").innerText = data[0].volume
                         });
-                        lastFetched = data[0].timestamp;
-                        document.getElementById("throughput").innerText = data[0].volume
                     }
                 )
                 const now = lastFetched !== "0" ? new Date(lastFetched) : new Date();
                 const startTime = new Date(now.getTime() - 1000 * 60 * 5).toISOString();
                 const endTime = new Date(now.getTime() + 10 * 1000).toISOString();
 
-                console.log("Plot Range - Start:", startTime, "End:", endTime);
 
                 Plotly.update('tester', {
                     x: [trace1.x],

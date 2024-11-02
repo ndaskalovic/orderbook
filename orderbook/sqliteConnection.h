@@ -22,7 +22,7 @@ class DatabaseConnection
                 std::cerr << "Could not open DB at " << dbPath << std::endl;
             }
             insertPriceVolDataQuery = "INSERT INTO pricevoldata (timestamp, volume, price) VALUES (?, ?, ?);";
-            insertOrderQuery = "INSERT INTO order (timestamp, ordertype, side, price, quantity) VALUES (?, ?, ?, ?, ?);";
+            insertOrderQuery = "INSERT INTO orderdata (timestamp, ordertype, side, price, quantity) VALUES (?, ?, ?, ?, ?);";
         };
         void InsertPriceVolData(std::string timestamp, int volume, Price price)
         {
@@ -31,19 +31,21 @@ class DatabaseConnection
             sqlite3_bind_text(stmt, 1, timestamp.c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_int(stmt, 2, volume);
             sqlite3_bind_int(stmt, 3, price);
-            sqlite3_step(stmt);
+            int s = sqlite3_step(stmt);
+            std::cout << "step pricevol data= " << s << std::endl;
             sqlite3_finalize(stmt);
         };
         void InsertOrderData(std::string timestamp, OrderType type, Side side, Price price, Quantity quantity)
         {
             sqlite3_stmt *stmt;
-            sqlite3_prepare_v3(DB, insertPriceVolDataQuery.c_str(), -1, -1, &stmt, nullptr);
+            sqlite3_prepare_v3(DB, insertOrderQuery.c_str(), -1, -1, &stmt, nullptr);
             sqlite3_bind_text(stmt, 1, timestamp.c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_int(stmt, 2, (int)type);
             sqlite3_bind_int(stmt, 3, (int)side);
             sqlite3_bind_int(stmt, 4, price);
             sqlite3_bind_int(stmt, 5, quantity);
-            sqlite3_step(stmt);
+            int s = sqlite3_step(stmt);
+            std::cout << "step order data= " << s << std::endl;
             sqlite3_finalize(stmt);
         };
         ~DatabaseConnection()
