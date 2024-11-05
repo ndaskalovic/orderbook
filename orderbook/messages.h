@@ -12,3 +12,8 @@ struct OrderMessage
     Quantity quantity;
     Price price;
 };
+
+struct PriceMessage
+{
+    Price price;
+};

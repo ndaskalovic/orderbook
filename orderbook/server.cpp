@@ -11,7 +11,7 @@
 #include "Aeron.h"
 #include "FragmentAssembler.h"
 #include "concurrent/SleepingIdleStrategy.h"
-#include "orderMessage.h"
+#include "messages.h"
 #include "usings.h"
 #include "trade.h"
 #include "tradeInfo.h"
@@ -24,6 +24,7 @@
 
 using namespace aeron::util;
 using namespace aeron;
+typedef std::array<std::uint8_t, 16> buffer_t;
 
 std::atomic<bool> running(true);
 std::atomic<int> oid = 0;
@@ -49,15 +50,19 @@ fragment_handler_t addOrderToBook()
         // may incur overhead
         if (book.AddOrder(orderp))
             std::scoped_lock bufLock{bufferMutex};
-            recentOrders[oid % 5] = orderp;
-            oid++;
+        recentOrders[oid % 5] = orderp;
+        oid++;
     };
 }
 
-void dbThreadTask()
+void dbThreadTask(Settings *settings, AeronPublication *publication)
 {
     static int idcount = 0;
     DatabaseConnection DB(configuration::DATABASE_PATH);
+    AERON_DECL_ALIGNED(buffer_t buffer, 16);
+    concurrent::AtomicBuffer srcBuffer(&buffer[0], buffer.size());
+    PriceMessage &data = srcBuffer.overlayStruct<PriceMessage>(0);
+    long msgLength = sizeof(data);
     while (running)
     {
         const auto now = std::chrono::system_clock::now();
@@ -76,6 +81,8 @@ void dbThreadTask()
             };
         }
         std::cout << "Price: " << book.GetCurrentPrice() << ", Volume: " << oid - idcount << "\n\n";
+        data.price = book.GetCurrentPrice();
+        const std::int64_t result = publication->publication->offer(srcBuffer, 0, msgLength);
 
         idcount = oid;
         std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -85,14 +92,14 @@ void dbThreadTask()
 int main(int argc, char **argv)
 {
     std::shared_ptr<std::thread> dbThread;
-    Price startPrice(100);
-    for (int i = 1; i < 20; i++)
+    Price startPrice(10000);
+    for (int i = 1; i < 2000; i++)
     {
-        Order buy = Order(OrderType::LIMIT_ORDER, oid, Side::BUY, rand() % 20000 + 100000, startPrice - i);
+        Order buy = Order(OrderType::LIMIT_ORDER, oid, Side::BUY, rand() % 100000 + 100, startPrice - i);
         OrderPointer buyPointer = std::make_shared<Order>(buy);
         book.AddOrder(buyPointer);
         oid++;
-        Order sell = Order(OrderType::LIMIT_ORDER, oid, Side::SELL, rand() % 20000 + 100000, startPrice + i);
+        Order sell = Order(OrderType::LIMIT_ORDER, oid, Side::SELL, rand() % 100000 + 100, startPrice + i);
         OrderPointer sellPointer = std::make_shared<Order>(sell);
         book.AddOrder(sellPointer);
         oid++;
@@ -101,10 +108,11 @@ int main(int argc, char **argv)
     try
     {
         Settings settings(configuration::DEFAULT_CHANNEL, configuration::DEFAULT_STREAM_ID, configuration::DATABASE_PATH, configuration::DEFAULT_LINGER_TIMEOUT_MS);
+        Settings dataThreadSettings(configuration::DEFAULT_PRICE_DATA_CHANNEL, configuration::DEFAULT_PRICE_DATA_STREAM_ID, configuration::DATABASE_PATH, configuration::DEFAULT_LINGER_TIMEOUT_MS);
 
         std::cout << "Subscribing to channel " << settings.channel << " on Stream ID " << settings.streamId << std::endl;
 
-        aeron::Context context;
+        AeronPublication dataPublication = connectToAeronPublication(dataThreadSettings);
 
         AeronSubscription aeronSubscription = connectToAeronSubscription(settings);
         signal(SIGINT, sigIntHandler);
@@ -115,7 +123,7 @@ int main(int argc, char **argv)
 
         Subscription &subscriptionRef = *aeronSubscription.subscription;
 
-        dbThread = std::make_shared<std::thread>(dbThreadTask);
+        dbThread = std::make_shared<std::thread>(dbThreadTask, &dataThreadSettings, &dataPublication);
 
         aeron::util::OnScopeExit tidy(
             [&]()

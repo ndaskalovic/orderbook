@@ -92,7 +92,7 @@
             var trace1 = {
                 x: [],
                 y: [],
-                mode: 'lines+markers',
+                mode: 'lines',
                 line: { color: 'rgba(31,119,180,1)' },
                 xaxis: 'x',
                 yaxis: 'y',
@@ -226,7 +226,8 @@
                     y: [trace1.y]
                 });
                 Plotly.relayout('tester', {
-                    'xaxis.range': [startTime, endTime]
+                    'xaxis.range': [startTime, endTime],
+                    'yaxis.autorange': true
                 });
             }, 1000);
 

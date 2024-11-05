@@ -32,7 +32,6 @@ class DatabaseConnection
             sqlite3_bind_int(stmt, 2, volume);
             sqlite3_bind_int(stmt, 3, price);
             int s = sqlite3_step(stmt);
-            std::cout << "step pricevol data= " << s << std::endl;
             sqlite3_finalize(stmt);
         };
         void InsertOrderData(std::string timestamp, OrderType type, Side side, Price price, Quantity quantity)
@@ -45,7 +44,6 @@ class DatabaseConnection
             sqlite3_bind_int(stmt, 4, price);
             sqlite3_bind_int(stmt, 5, quantity);
             int s = sqlite3_step(stmt);
-            std::cout << "step order data= " << s << std::endl;
             sqlite3_finalize(stmt);
         };
         ~DatabaseConnection()
