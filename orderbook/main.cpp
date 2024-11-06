@@ -3,6 +3,7 @@
 #include <map>
 #include <list>
 #include <unordered_map>
+#include <atomic>
 #include "usings.h"
 #include "trade.h"
 #include "tradeInfo.h"
