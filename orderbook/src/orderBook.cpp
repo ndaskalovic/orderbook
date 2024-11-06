@@ -171,6 +171,7 @@ void OrderBook::PrintAsks()
 void OrderBook::PrintBook()
 {
     std::scoped_lock bookLock{ordermutex_};
+    int c = 0;
     for (const auto &pair : asks_ | std::views::reverse)
     {
         int q = 0;
@@ -178,8 +179,12 @@ void OrderBook::PrintBook()
         {
             q += order->GetOrderQuantity() - order->GetFilledQuantity();
         }
+        c++;
+        if (c == 6)
+            break;
         std::cout << "\033[1;31m" << pair.first << " | " << q << "\033[0m" << std::endl;
     }
+    c = 0;
     std::cout << std::endl;
     for (const auto &pair : bids_)
     {
@@ -188,6 +193,9 @@ void OrderBook::PrintBook()
         {
             q += order->GetOrderQuantity() - order->GetFilledQuantity();
         }
+        c++;
+        if (c == 6)
+            break;
         std::cout << "\033[1;32m" << pair.first << " | " << q << "\033[0m" << std::endl;
     }
 }

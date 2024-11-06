@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <thread>
 #include <array>
+#include <random>
 #include <csignal>
 #include <cinttypes>
 #include "config.h"
@@ -25,6 +26,7 @@ typedef std::array<std::uint8_t, 16> buffer_t;
 
 int main(int argc, char **argv)
 {
+    int bratio;
     try
     {
         Settings settings(configuration::DEFAULT_CHANNEL, configuration::DEFAULT_STREAM_ID, configuration::DATABASE_PATH, configuration::DEFAULT_LINGER_TIMEOUT_MS);
@@ -45,11 +47,13 @@ int main(int argc, char **argv)
         {
             std::cout << "\n\nEnter how many order to submit: ";
             std::cin >> nOrders;
+            std::cout << "\n\nEnter the ratio of buy orders to sell orders: ";
+            std::cin >> bratio;
             for (std::int64_t i = 0; i < nOrders && running; i++)
             {
                 data.price = 100;
                 data.quantity = 1;
-                data.side = (Side)(i % 2);
+                data.side = rand() % 100 < bratio ? Side::BUY : Side::SELL;
                 data.type = OrderType::MARKET_ORDER;
 
                 const std::int64_t result = aeronPublication.publication->offer(srcBuffer, 0, msgLength);

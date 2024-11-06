@@ -63,11 +63,20 @@ void dbThreadTask(Settings *settings, AeronPublication *publication)
     concurrent::AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     PriceMessage &data = srcBuffer.overlayStruct<PriceMessage>(0);
     long msgLength = sizeof(data);
+    Price currentPrice;
     while (running)
     {
+        for (int i = 0; i < 1000; i++)
+        {
+            currentPrice = book.GetCurrentPrice();
+            data.price = currentPrice;
+            const std::int64_t result = publication->publication->offer(srcBuffer, 0, msgLength);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            /* code */
+        }
         const auto now = std::chrono::system_clock::now();
         auto fnow = std::format("{:%FT%TZ}", now);
-        DB.InsertPriceVolData(fnow, oid - idcount, book.GetCurrentPrice());
+        DB.InsertPriceVolData(fnow, oid - idcount, currentPrice);
         if ((oid - idcount) > 5)
         {
             std::scoped_lock bufLock{bufferMutex};
@@ -76,16 +85,14 @@ void dbThreadTask(Settings *settings, AeronPublication *publication)
                 if (recentOrders[i])
                 {
                     DB.InsertOrderData(fnow, recentOrders[i]->GetOrderType(), recentOrders[i]->GetOrderSide(), recentOrders[i]->GetOrderPrice(), recentOrders[i]->GetOrderQuantity());
-                    // std::cout << "OID: " << oid << ", recent order ID: " << recentOrders[i]->GetOrderId() << "\n";
                 }
             };
         }
-        std::cout << "Price: " << book.GetCurrentPrice() << ", Volume: " << oid - idcount << "\n\n";
-        data.price = book.GetCurrentPrice();
-        const std::int64_t result = publication->publication->offer(srcBuffer, 0, msgLength);
+        book.PrintBook();
+        std::cout << "Price: " << currentPrice << ", Volume: " << oid - idcount << "\n\n";
 
         idcount = oid;
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        
     }
 }
 
@@ -93,13 +100,14 @@ int main(int argc, char **argv)
 {
     std::shared_ptr<std::thread> dbThread;
     Price startPrice(10000);
-    for (int i = 1; i < 2000; i++)
+    srand(time(NULL));
+    for (int i = 1; i < 4; i++)
     {
-        Order buy = Order(OrderType::LIMIT_ORDER, oid, Side::BUY, rand() % 100000 + 100, startPrice - i);
+        Order buy = Order(OrderType::LIMIT_ORDER, oid, Side::BUY, rand() % 10 + 100, startPrice - i);
         OrderPointer buyPointer = std::make_shared<Order>(buy);
         book.AddOrder(buyPointer);
         oid++;
-        Order sell = Order(OrderType::LIMIT_ORDER, oid, Side::SELL, rand() % 100000 + 100, startPrice + i);
+        Order sell = Order(OrderType::LIMIT_ORDER, oid, Side::SELL, rand() % 10 + 100, startPrice + i);
         OrderPointer sellPointer = std::make_shared<Order>(sell);
         book.AddOrder(sellPointer);
         oid++;
