@@ -1,9 +1,12 @@
 from typing import Annotated
 from starlette.responses import FileResponse
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Response
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
+from cpu_info import get_cpu_info
+
+CPU_INFO = get_cpu_info()
 
 
 class PriceVolData(SQLModel, table=True):
@@ -106,6 +109,11 @@ def create_pricevoldata(data: PriceVolData, session: SessionDep) -> PriceVolData
 @app.get("/")
 def read_index():
     return FileResponse("index.html")
+
+
+@app.get("/platform-info/")
+def read_cpu_info():
+    return Response(CPU_INFO, 200)
 
 
 @app.post("/side-ratio/")

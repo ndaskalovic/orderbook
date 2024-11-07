@@ -45,20 +45,22 @@
             color: black;
             border: 1px solid black;
             transform: translateY(-4px) translateX(-2px);
-            
+
         }
 
         .pushable:active .front {
             transform: translateY(-1px) translateX(-1px);
         }
-
     </style>
 </head>
 
 <body class="bg-gray-200">
     <div class="w-full h-[50px] border-2 border-black flex items-center justify-center relative">
         <div class="font-bold text-xl">Orderbook</div>
-        <div class="stats absolute right-4">Throughput: <span id="throughput">0</span> orders/sec</div>
+        <div class="stats absolute right-4 grid grid-rows-2">
+            <div class="row-span-1 text-sm text-right">Throughput: <span id="throughput">0</span> orders/sec</div>
+            <div class="row-span-1 text-sm text-right" id="cpu-info"></div>
+        </div>
     </div>
     <div class="grid grid-rows-1 grid-cols-3 w-full" id="container2">
         <div class="border-2 border-black row-span-1 col-span-1">
@@ -82,235 +84,256 @@
                 <div id="tester" class="w-full h-full"></div>
             </div>
             <div class="row-span-1 border-2 border-black flex items-center">
-                <button class="pushable mx-auto" type="button" id="buy-btn" onclick="postRequestWithDelay(600, 'buy-btn')"><span class="front bg-green-600">Flood Buys</span></button>
-                <button class="pushable mx-auto" type="button" id="sell-btn" onclick="postRequestWithDelay(400, 'sell-btn')"><span class="front bg-red-600">Flood Sells</span></button>
+                <button class="pushable mx-auto" type="button" id="buy-btn"
+                    onclick="setOrderPressureRatio(600, 'buy-btn')"><span class="front bg-green-600">Buy Pressure</span></button>
+                <div class="text-xl">Price: £ <span id="current-price">-</span></div>
+                <button class="pushable mx-auto" type="button" id="sell-btn"
+                    onclick="setOrderPressureRatio(400, 'sell-btn')"><span class="front bg-red-600">Sell Pressure</span></button>
             </div>
         </div>
     </div>
     <script>
-            function postRequestWithDelay(ratioInt, btnId) {
-                const button = document.getElementById(btnId);
-                button.disabled = true;
-
-                function makeRequest(ratio, overwrite, callback) {
-                    fetch("/side-ratio/", {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            "ratio": ratio,
-                            "overwrite": overwrite
-                        })
-                    })
-                        .then(response => {
-                            if (response.ok) {
-                                console.log("Request was successful:", response);
-                                callback();
-                            } else {
-                                console.error("Request failed:", response.statusText);
-                            }
-                        })
-                        .catch(error => console.error("Error with request:", error));
-                }
-
-                // First request
-                makeRequest(ratioInt, true, () => {
-                    // Wait 7 seconds and then make the second request
-                    setTimeout(() => {
-                        makeRequest(500, false, () => {
-                            button.disabled = false;
-                        });
-                    }, 10000);
-                });
+        fetch("/platform-info/").then(response => {
+            if (response.ok){
+                response.text().then((text) => 
+            document.getElementById('cpu-info').innerText = text);
             }
+        })
+        function setOrderPressureRatio(ratioInt, btnId) {
+            const button = document.getElementById(btnId);
+            button.disabled = true;
 
-            function numberWithCommas(x) {
-                return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            }
-            var trace1 = {
-                x: [],
-                y: [],
-                mode: 'lines',
-                line: { color: 'rgba(31,119,180,1)' },
-                xaxis: 'x',
-                yaxis: 'y',
-                type: 'scatter',
-                name: 'Price'
-            };
-            var trace2 = {
-                x: [],
-                y: [],
-                type: 'bar',
-                line: { color: 'rgba(31,119,180,1)' },
-                xaxis: 'x',
-                yaxis: 'y2',
-                name: 'Orders'
-            };
-
-            var data = [trace1, trace2];
-
-            let currentTime = new Date().getTime();
-            var layout = {
-                dragmode: 'pan',
-                paper_bgcolor: "#e5e7eb",
-                plot_bgcolor: "#e5e7eb",
-                autosize: true,
-                grid: { rows: 2, columns: 1, roworder: 'top to bottom' },
-                margin: {
-                    r: 10,
-                    t: 25,
-                    b: 40,
-                    l: 60
-                },
-                showlegend: false,
-                xaxis: {
-                    type: 'date',
-                    showgrid: false,
-                    linewidth: 2,
-                    linecolor: 'black',
-                    mirror: 'all',
-                    matches: 'x2'
-                },
-                xaxis2: {
-                    type: 'date',
-                    showgrid: false,
-                    linewidth: 2,
-                    linecolor: 'black',
-                    anchor: 'y2',
-                    domain: [0, 1]
-                },
-                yaxis: {
-                    type: 'linear',
-                    linewidth: 2,
-                    linecolor: 'black',
-                    mirror: 'ticks',
-                    domain: [0.17, 1.0]  // Adjust height of the volume bar chart (20% of total height)
-                },
-                yaxis2: {
-                    type: 'linear',
-                    linewidth: 2,
-                    linecolor: 'black',
-                    mirror: 'ticks',
-                    // scaleanchor: 'x',
-                    // matches: 'x',
-                    // overlaying: 'y',
-                    domain: [0, 0.15]  // Adjust height of the volume bar chart (20% of total height)
-                }
-            };
-
-            var config = {responsive: true}
-
-            Plotly.newPlot('tester', data, layout, config);
-            
-            let lastFetched = new Date((new Date().getTime()) - 1000*60*10).toISOString();
-            let lastFetchedOrders = (new Date()).toISOString();
-
-            setInterval(() => {
-                fetch("/orders/?startdate=" + lastFetchedOrders).then(
-                    response => {
-                        if (!response.ok) {
-                            console.log("Network Error")
-                        }
-                        return response.json()
-                    }
-                ).then(
-                    data => {
-                        const tableBody = document.getElementById("orders-table");
-                        data.forEach(element => {
-                            lastFetchedOrders = data[data.length-1].timestamp;
-                            const row = document.createElement("tr");
-                            const idCell = document.createElement("td");
-                            idCell.className = "w-1/4";
-                            idCell.innerText = element.price;
-                            row.appendChild(idCell);
-
-                            // Order Side (e.g., Buy/Sell) with styling
-                            const sideCell = document.createElement("td");
-                            sideCell.className = "w-1/4 " + (element.side === 0 ? "text-green-600" : "text-red-600");
-                            sideCell.innerText = element.side === 0 ? "Buy" : "Sell";
-                            row.appendChild(sideCell);
-
-                            // Quantity
-                            const quantityCell = document.createElement("td");
-                            quantityCell.className = "w-1/4";
-                            quantityCell.innerText = element.quantity;
-                            row.appendChild(quantityCell);
-
-                            // Order Type (e.g., Market/Limit)
-                            const typeCell = document.createElement("td");
-                            typeCell.className = "w-1/4";
-                            switch (element.ordertype) {
-                                case 0:
-                                    typeCell.innerText = "Market";
-                                    break;
-                                case 1:
-                                    typeCell.innerText = "Limit";
-                                    break;
-                                case 2:
-                                    typeCell.innerText = "Fill or Kill";
-                                    break;
-                                case 3:
-                                    typeCell.innerText = "Good Till Cancel";
-                                    break;
-                                default:
-                                    typeCell.innerText = "Unknown";
-                            }
-
-                            row.appendChild(typeCell);
-
-                            tableBody.insertBefore(row, tableBody.firstChild);
-                        });
-                    }
-                )
-            }, 500);
-
-            let currentPrice = 0;
-
-            setInterval(function () {
-                lastFetched = new Date((new Date().getTime()) - 1000 * 60 * 10).toISOString();
-
-                fetch("/price-vol-data/?startdate=" + lastFetched).then(
-                    response => {
-                        if (!response.ok) {
-                            console.log("Network Error")
-                        }
-                        return response.json()
-                    }
-                ).then(
-                    data => {
-                        if (data.length > 0) {
-                            
-                            lastFetched = data[0].timestamp;
-                            currentPrice = data[0].price;
-                            document.getElementById('throughput').innerText = numberWithCommas(data[0].volume)
-                            const newX = data.map(element => element.timestamp);
-                            const newYPrice = data.map(element => element.price);
-                            const newYVolume = data.map(element => element.volume);
-                        
-                            Plotly.update('tester', {
-                                x: [newX, newX],
-                                y: [newYPrice, newYVolume]
-                            }, {}, [0, 1]);
-                        
-                            const now = lastFetched !== "0" ? new Date(lastFetched) : new Date();
-                            const startTime = new Date(now.getTime() - 1000 * 60 * 5).toISOString();
-                            const endTime = new Date(now.getTime() + 10 * 1000).toISOString();
-                            Plotly.relayout('tester', {
-                                'xaxis.range': [startTime, endTime],
-                                'yaxis.range': [currentPrice - 0.02*currentPrice, currentPrice + 0.02*currentPrice]
-                            });
-                        }
-                    }
-                )
-            }, 1000);
-
-            window.onresize = function () {
-                    Plotly.relayout('tester', {
-                        autosize:true
+            function makeRequest(ratio, overwrite, callback) {
+                fetch("/side-ratio/", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
                     },
-                );
-                };
+                    body: JSON.stringify({
+                        "ratio": ratio,
+                        "overwrite": overwrite
+                    })
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            console.log("Request was successful:", response);
+                            callback();
+                        } else {
+                            console.error("Request failed:", response.statusText);
+                        }
+                    })
+                    .catch(error => console.error("Error with request:", error));
+            }
+
+            // First request
+            makeRequest(ratioInt, true, () => {
+                // Wait 10 seconds and then make the second request
+                setTimeout(() => {
+                    makeRequest(500, false, () => {
+                        button.disabled = false;
+                    });
+                }, 10000);
+            });
+        }
+
+        function numberWithCommas(x) {
+            return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        var trace1 = {
+            x: [],
+            y: [],
+            mode: 'lines',
+            line: { color: 'rgba(31,119,180,1)' },
+            xaxis: 'x',
+            yaxis: 'y',
+            type: 'scatter',
+            name: 'Price'
+        };
+        var trace2 = {
+            x: [],
+            y: [],
+            type: 'bar',
+            line: { color: 'rgba(31,119,180,1)' },
+            xaxis: 'x',
+            yaxis: 'y2',
+            name: 'Orders'
+        };
+
+        var data = [trace1, trace2];
+
+        let currentTime = new Date().getTime();
+        var layout = {
+            dragmode: 'pan',
+            paper_bgcolor: "#e5e7eb",
+            plot_bgcolor: "#e5e7eb",
+            autosize: true,
+            grid: { rows: 2, columns: 1, roworder: 'top to bottom' },
+            margin: {
+                r: 10,
+                t: 25,
+                b: 40,
+                l: 60
+            },
+            showlegend: false,
+            xaxis: {
+                type: 'date',
+                showgrid: false,
+                linewidth: 2,
+                linecolor: 'black',
+                mirror: 'all',
+                matches: 'x2'
+            },
+            xaxis2: {
+                type: 'date',
+                showgrid: false,
+                linewidth: 2,
+                linecolor: 'black',
+                anchor: 'y2',
+                domain: [0, 1]
+            },
+            yaxis: {
+                type: 'linear',
+                linewidth: 2,
+                linecolor: 'black',
+                mirror: 'ticks',
+                domain: [0.17, 1.0]  // Adjust height of the volume bar chart (20% of total height)
+            },
+            yaxis2: {
+                type: 'linear',
+                linewidth: 2,
+                linecolor: 'black',
+                mirror: 'ticks',
+                domain: [0, 0.15]  // Adjust height of the volume bar chart (20% of total height)
+            }
+        };
+
+        var config = { responsive: true, displayModeBar: false }
+
+        Plotly.newPlot('tester', data, layout, config);
+
+        let lastFetched = new Date((new Date().getTime()) - 1000 * 60 * 10).toISOString();
+        let lastFetchedOrders = (new Date()).toISOString();
+
+        setInterval(() => {
+            fetch("/orders/?startdate=" + lastFetchedOrders).then(
+                response => {
+                    if (!response.ok) {
+                        console.log("Network Error")
+                    }
+                    return response.json()
+                }
+            ).then(
+                data => {
+                    const tableBody = document.getElementById("orders-table");
+                    data.forEach(element => {
+                        lastFetchedOrders = data[data.length - 1].timestamp;
+                        const row = document.createElement("tr");
+                        const idCell = document.createElement("td");
+                        idCell.className = "w-1/4";
+                        idCell.innerText = element.price;
+                        row.appendChild(idCell);
+
+                        // Order Side (e.g., Buy/Sell) with styling
+                        const sideCell = document.createElement("td");
+                        sideCell.className = "w-1/4 " + (element.side === 0 ? "text-green-600" : "text-red-600");
+                        sideCell.innerText = element.side === 0 ? "Buy" : "Sell";
+                        row.appendChild(sideCell);
+
+                        // Quantity
+                        const quantityCell = document.createElement("td");
+                        quantityCell.className = "w-1/4";
+                        quantityCell.innerText = element.quantity;
+                        row.appendChild(quantityCell);
+
+                        // Order Type (e.g., Market/Limit)
+                        const typeCell = document.createElement("td");
+                        typeCell.className = "w-1/4";
+                        switch (element.ordertype) {
+                            case 0:
+                                typeCell.innerText = "Market";
+                                break;
+                            case 1:
+                                typeCell.innerText = "Limit";
+                                break;
+                            case 2:
+                                typeCell.innerText = "Fill or Kill";
+                                break;
+                            case 3:
+                                typeCell.innerText = "Good Till Cancel";
+                                break;
+                            default:
+                                typeCell.innerText = "Unknown";
+                        }
+
+                        row.appendChild(typeCell);
+
+                        tableBody.insertBefore(row, tableBody.firstChild);
+                    });
+                }
+            )
+        }, 500);
+
+        let currentPrice = 0;
+
+        setInterval(function () {
+            lastFetched = new Date((new Date().getTime()) - 1000 * 60 * 10).toISOString();
+
+            fetch("/price-vol-data/?startdate=" + lastFetched).then(
+                response => {
+                    if (!response.ok) {
+                        console.log("Network Error")
+                    }
+                    return response.json()
+                }
+            ).then(
+                data => {
+                    if (data.length > 0) {
+
+                        lastFetched = data[0].timestamp;
+                        currentPrice = data[0].price;
+                        document.getElementById('current-price').innerText = currentPrice;
+                        document.getElementById('throughput').innerText = numberWithCommas(data[0].volume)
+                        const newX = data.map(element => element.timestamp);
+                        const newYPrice = data.map(element => element.price);
+                        const newYVolume = data.map(element => element.volume);
+
+                        Plotly.update('tester', {
+                            x: [newX, newX],
+                            y: [newYPrice, newYVolume]
+                        }, {}, [0, 1]);
+
+                        const now = lastFetched !== "0" ? new Date(lastFetched) : new Date();
+                        const startTime = new Date(now.getTime() - 1000 * 60 * 5).toISOString();
+                        const endTime = new Date(now.getTime() + 10 * 1000).toISOString();
+                        Plotly.relayout('tester', {
+                            'xaxis.range': [startTime, endTime],
+                            'yaxis.range': [currentPrice - 0.02 * currentPrice, currentPrice + 0.02 * currentPrice],
+                            // 'annotations': [
+                            //     {
+                            //         x: newX[0],
+                            //         y: newYPrice[0],
+                            //         xref: 'x',
+                            //         yref: 'y',
+                            //         text: `${newYPrice[0]}`,
+                            //         showarrow: true,
+                            //         arrowhead: 7,
+                            //         ax: 0,
+                            //         ay:100,
+                            //         font: { color: 'black' }
+                            //     }
+                            // ]
+                        });
+                    }
+                }
+            )
+        }, 1000);
+
+        window.onresize = function () {
+            Plotly.relayout('tester', {
+                autosize: true
+            },
+            );
+        };
     </script>
 </body>
 
