@@ -65,7 +65,7 @@ def on_startup():
     create_db_and_tables()
 
 
-@app.get("/price-vol-data/")
+@app.get("/orderbook-api/price-vol-data/")
 def read_pricevoldata(
     session: SessionDep,
     offset: int = 0,
@@ -81,7 +81,7 @@ def read_pricevoldata(
     return entries
 
 
-@app.get("/orders/")
+@app.get("/orderbook-api/orders/")
 def read_orders(
     session: SessionDep,
     offset: int = 0,
@@ -97,7 +97,7 @@ def read_orders(
     return entries[::-1]
 
 
-@app.post("/price-vol-data/")
+@app.post("/orderbook-api/price-vol-data/")
 def create_pricevoldata(data: PriceVolData, session: SessionDep) -> PriceVolData:
     data.timestamp = datetime.fromisoformat(data.timestamp)
     session.add(data)
@@ -111,12 +111,12 @@ def read_index():
     return FileResponse("index.html")
 
 
-@app.get("/platform-info/")
+@app.get("/orderbook-api/platform-info/")
 def read_cpu_info():
     return Response(CPU_INFO, 200)
 
 
-@app.post("/side-ratio/")
+@app.post("/orderbook-api/side-ratio/")
 def create_pressure(data: OrderPressure, session: SessionDep) -> OrderPressure:
     order_pressure = session.exec(
         select(OrderPressure).where(OrderPressure.id == 1)).first()

@@ -85,15 +85,15 @@
             </div>
             <div class="row-span-1 border-2 border-black flex items-center">
                 <button class="pushable mx-auto" type="button" id="buy-btn"
-                    onclick="setOrderPressureRatio(600, 'buy-btn')"><span class="front bg-green-600">Buy Pressure</span></button>
+                    onclick="setOrderPressureRatio(570, 'buy-btn')"><span class="front bg-green-600">Buy Pressure</span></button>
                 <div class="text-xl">Price: £ <span id="current-price">-</span></div>
                 <button class="pushable mx-auto" type="button" id="sell-btn"
-                    onclick="setOrderPressureRatio(400, 'sell-btn')"><span class="front bg-red-600">Sell Pressure</span></button>
+                    onclick="setOrderPressureRatio(430, 'sell-btn')"><span class="front bg-red-600">Sell Pressure</span></button>
             </div>
         </div>
     </div>
     <script>
-        fetch("/platform-info/").then(response => {
+        fetch("/orderbook-api/platform-info/").then(response => {
             if (response.ok){
                 response.text().then((text) => 
             document.getElementById('cpu-info').innerText = text);
@@ -104,7 +104,7 @@
             button.disabled = true;
 
             function makeRequest(ratio, overwrite, callback) {
-                fetch("/side-ratio/", {
+                fetch("/orderbook-api/side-ratio/", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -215,7 +215,7 @@
         let lastFetchedOrders = (new Date()).toISOString();
 
         setInterval(() => {
-            fetch("/orders/?startdate=" + lastFetchedOrders).then(
+            fetch("/orderbook-api/orders/?startdate=" + lastFetchedOrders).then(
                 response => {
                     if (!response.ok) {
                         console.log("Network Error")
@@ -278,7 +278,7 @@
         setInterval(function () {
             lastFetched = new Date((new Date().getTime()) - 1000 * 60 * 10).toISOString();
 
-            fetch("/price-vol-data/?startdate=" + lastFetched).then(
+            fetch("/orderbook-api/price-vol-data/?startdate=" + lastFetched).then(
                 response => {
                     if (!response.ok) {
                         console.log("Network Error")
