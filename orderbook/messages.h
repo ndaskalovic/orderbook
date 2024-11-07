@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+
 #include "usings.h"
 #include "side.h"
 #include "orderType.h"

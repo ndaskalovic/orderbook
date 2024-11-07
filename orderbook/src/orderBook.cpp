@@ -1,5 +1,6 @@
-#include <ranges>
 #include <mutex>
+#include <iostream>
+
 #include "usings.h"
 #include "orderType.h"
 #include "order.h"
@@ -66,6 +67,7 @@ void OrderBook::MatchOrders()
             auto &[askPrice, asks] = *asks_.begin();
             auto bid = bids.front();
             auto ask = asks.front();
+            // move market order to next price level if not filled completely
             if (bid->GetOrderType() == OrderType::MARKET_ORDER)
             {
                 bids.pop_front();
@@ -109,8 +111,10 @@ bool OrderBook::AddOrder(OrderPointer order)
         }
         else if (order->GetOrderSide() == Side::BUY && asks_.empty())
         {
-            const auto &[topBid, _] = *bids_.begin();
-            order->UpdatePrice(topBid);
+            // const auto &[topBid, _] = *bids_.begin();
+            // order->UpdatePrice(topBid);
+            // ignore when opposite side of book empty
+            return false;
         }
         if (order->GetOrderSide() == Side::SELL && !bids_.empty())
         {
@@ -119,10 +123,24 @@ bool OrderBook::AddOrder(OrderPointer order)
         }
         else if (order->GetOrderSide() == Side::SELL && bids_.empty())
         {
-            const auto &[topAsk, _] = *asks_.begin();
-            order->UpdatePrice(topAsk);
+            // const auto &[topAsk, _] = *asks_.begin();
+            // order->UpdatePrice(topAsk);
+            // ignore when opposite side of book empty
+            return false;
         }
     }
+
+    if (order->GetOrderType() == OrderType::LIMIT_ORDER)
+    {
+        if (order->GetOrderSide() == Side::BUY && order->GetOrderPrice() >= asks_.begin()->first)
+        {
+            return false;
+        }
+        else if (order->GetOrderSide() == Side::SELL && order->GetOrderPrice() <= bids_.begin()->first)
+        {
+            return false;
+        }
+        }
 
     if (order->GetOrderSide() == Side::BUY)
     {
@@ -172,7 +190,7 @@ void OrderBook::PrintBook()
 {
     std::scoped_lock bookLock{ordermutex_};
     int c = 0;
-    for (const auto &pair : asks_ | std::views::reverse)
+    for (const auto &pair : asks_)
     {
         int q = 0;
         for (const auto &order : pair.second)
@@ -224,12 +242,15 @@ bool OrderBook::CanFill(OrderPointer order)
 Price OrderBook::GetCurrentPrice()
 {
     std::scoped_lock bookLock{ordermutex_};
+    static bool roundUp = false;
     if (!bids_.empty() && !asks_.empty())
     {
         auto &[bidPrice, b] = *bids_.begin();
         auto &[askPrice, a] = *asks_.begin();
-
-        return Price((askPrice + bidPrice) / 2);
+        // int prices so need to randomly round up or down to balance mid price
+        roundUp = !roundUp;
+        float midPrice = ((float)askPrice + (float)bidPrice) / 2;
+        return roundUp ? Price(std::ceil(midPrice)) : Price(std::floor(midPrice));
     }
     else if (!bids_.empty() && asks_.empty())
     {

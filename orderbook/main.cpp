@@ -1,12 +1,7 @@
 #include <iostream>
-#include <memory>
-#include <map>
-#include <list>
-#include <unordered_map>
 #include <atomic>
+
 #include "usings.h"
-#include "trade.h"
-#include "tradeInfo.h"
 #include "orderType.h"
 #include "side.h"
 #include "order.h"

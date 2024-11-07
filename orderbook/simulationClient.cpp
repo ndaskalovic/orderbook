@@ -2,8 +2,10 @@
 #include <cstdio>
 #include <thread>
 #include <array>
+#include <random>
 #include <csignal>
 #include <cinttypes>
+
 #include "config.h"
 #include "Aeron.h"
 #include "messages.h"
@@ -12,6 +14,7 @@
 #include "aeronUtils.h"
 #include "FragmentAssembler.h"
 #include "concurrent/SleepingIdleStrategy.h"
+#include "sqliteConnection.h"
 
 using namespace aeron::util;
 using namespace aeron;
@@ -20,7 +23,7 @@ static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS(1);
 static const int FRAGMENTS_LIMIT = 20;
 
 std::atomic<bool> running(true);
-std::atomic<Price> currentPrice(0);
+std::atomic<Price> currentPrice(-1);
 
 void sigIntHandler(int)
 {
@@ -42,28 +45,44 @@ fragment_handler_t updateCurrentPrice()
 
 void orderThreadTask(Settings *settings, AeronPublication *publication)
 {
-    srand(time(NULL));
+    DatabaseConnection DB(configuration::DATABASE_PATH);
+
+    srand(static_cast<unsigned>(std::time(0)));
     AERON_DECL_ALIGNED(buffer_t buffer, 16);
     concurrent::AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     OrderMessage &data = srcBuffer.overlayStruct<OrderMessage>(0);
     long msgLength = sizeof(data);
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    // gamma distribution to skew limit orders closer to current price and taper off
+    std::gamma_distribution<> gd(3, 2);
+    int buyRatio;
+
+    while (currentPrice == -1)
+    {
+        std::this_thread::yield();
+    }
+
     while (running)
     {
-
-        data.side = rand() % 2  == 1 ? Side::BUY : Side::SELL;
-        data.type = rand() % 100 < 52 ? OrderType::LIMIT_ORDER : OrderType::MARKET_ORDER;
-        if (data.type == OrderType::LIMIT_ORDER)
+        buyRatio = DB.GetOrderPressureRatio();
+        for (int i = 0; i < 100000; i++)
         {
-            int p = rand() % 5 + 1;
-            data.price = data.side == Side::BUY ? currentPrice + p * -1 : currentPrice + p;
-            data.quantity = rand() % 30 + 1;
-        } else {
-            data.price = 0;
-            data.quantity = rand() % 35 + 1;
+            data.side = rand() % 1000 < buyRatio ? Side::BUY : Side::SELL;
+            // 85% limit orders
+            data.type = rand() % 100 < 85 ? OrderType::LIMIT_ORDER : OrderType::MARKET_ORDER;
+            if (data.type == OrderType::LIMIT_ORDER)
+            {
+                int p = static_cast<int>(gd(gen)) + 1;
+                data.price = data.side == Side::BUY ? currentPrice + p * -1 : currentPrice + p;
+                data.quantity = rand() % 100 + 1;
+            } else {
+                data.quantity = rand() % 569 + 1;
+            }
+            int result = publication->publication->offer(srcBuffer, 0, msgLength);
+            // not worrying about back pressure since i want max throughput for the demo
         }
-        publication->publication->offer(srcBuffer, 0, msgLength);
-        // about 7k orders per second
-        std::this_thread::sleep_for(std::chrono::microseconds(rand() % 2 + 1));
         
     }
 }
@@ -75,6 +94,7 @@ int main(int argc, char **argv)
     {
         Settings dataSettings(configuration::DEFAULT_PRICE_DATA_CHANNEL, configuration::DEFAULT_PRICE_DATA_STREAM_ID, configuration::DATABASE_PATH, configuration::DEFAULT_LINGER_TIMEOUT_MS);
         std::cout << "Publishing to channel " << dataSettings.channel << " on Stream ID " << dataSettings.streamId << std::endl;
+        
         Settings orderSettings(configuration::DEFAULT_CHANNEL, configuration::DEFAULT_STREAM_ID, configuration::DATABASE_PATH, configuration::DEFAULT_LINGER_TIMEOUT_MS);
         std::cout << "Publishing to channel " << orderSettings.channel << " on Stream ID " << orderSettings.streamId << std::endl;
 

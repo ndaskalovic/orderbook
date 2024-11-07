@@ -5,6 +5,7 @@ venv
 build/
 debug/
 aeron-test/
+*.ipynb
 
 # Created by https://www.toptal.com/developers/gitignore/api/macos,python,c++
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos,python,c++

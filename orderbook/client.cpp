@@ -5,6 +5,7 @@
 #include <random>
 #include <csignal>
 #include <cinttypes>
+
 #include "config.h"
 #include "Aeron.h"
 #include "messages.h"
@@ -41,57 +42,50 @@ int main(int argc, char **argv)
         concurrent::AtomicBuffer srcBuffer(&buffer[0], buffer.size());
         OrderMessage &data = srcBuffer.overlayStruct<OrderMessage>(0);
         long msgLength = sizeof(data);
-        long nOrders;
+        int side;
+        long q;
 
         while (running)
         {
-            std::cout << "\n\nEnter how many order to submit: ";
-            std::cin >> nOrders;
-            std::cout << "\n\nEnter the ratio of buy orders to sell orders: ";
-            std::cin >> bratio;
-            for (std::int64_t i = 0; i < nOrders && running; i++)
+            std::cout << "\n\nEnter the side: ";
+            std::cin >> side;
+            std::cout << "\n\nEnter the quantity: ";
+            std::cin >> q;
+
+            data.quantity = q;
+            data.side = (Side)side;
+            data.type = OrderType::MARKET_ORDER;
+
+            const std::int64_t result = aeronPublication.publication->offer(srcBuffer, 0, msgLength);
+
+            if (result > 0)
             {
-                data.price = 100;
-                data.quantity = 1;
-                data.side = rand() % 100 < bratio ? Side::BUY : Side::SELL;
-                data.type = OrderType::MARKET_ORDER;
+                std::cout << "Sent\n";
+            }
+            else if (BACK_PRESSURED == result)
+            {
+                std::cout << "\nOffer failed due to back pressure\n";
+            }
+            else if (NOT_CONNECTED == result)
+            {
+                std::cout << "\nOffer failed because publisher is not connected to a subscriber" << std::endl;
+            }
+            else if (ADMIN_ACTION == result)
+            {
+                std::cout << "\nOffer failed because of an administration action in the system" << std::endl;
+            }
+            else if (PUBLICATION_CLOSED == result)
+            {
+                std::cout << "\nOffer failed because publication is closed" << std::endl;
+            }
+            else
+            {
+                std::cout << "\nOffer failed due to unknown reason " << result << std::endl;
+            }
 
-                const std::int64_t result = aeronPublication.publication->offer(srcBuffer, 0, msgLength);
-
-                if (result > 0)
-                {
-                    std::cout << "\rSent " << i + 1 << "/" << nOrders << std::flush;
-                }
-                else if (BACK_PRESSURED == result)
-                {
-                    std::cout << "\nOffer failed due to back pressure " << i + 1 << "/" << nOrders << std::endl;
-                }
-                else if (NOT_CONNECTED == result)
-                {
-                    std::cout << "\nOffer failed because publisher is not connected to a subscriber" << std::endl;
-                }
-                else if (ADMIN_ACTION == result)
-                {
-                    std::cout << "\nOffer failed because of an administration action in the system" << std::endl;
-                }
-                else if (PUBLICATION_CLOSED == result)
-                {
-                    std::cout << "\nOffer failed because publication is closed" << std::endl;
-                }
-                else
-                {
-                    std::cout << "\nOffer failed due to unknown reason " << result << std::endl;
-                }
-
-                if (!aeronPublication.publication->isConnected())
-                {
-                    std::cout << "No active subscribers detected" << std::endl;
-                }
-                // if (settings.lingerTimeoutMs > 0)
-                // {
-                //     std::cout << "Lingering for " << settings.lingerTimeoutMs << " milliseconds." << std::endl;
-                //     std::this_thread::sleep_for(std::chrono::milliseconds(settings.lingerTimeoutMs));
-                // }
+            if (!aeronPublication.publication->isConnected())
+            {
+                std::cout << "No active subscribers detected" << std::endl;
             }
         }
 

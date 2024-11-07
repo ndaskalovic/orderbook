@@ -1,6 +1,6 @@
 from typing import Annotated
 from starlette.responses import FileResponse
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,6 +20,12 @@ class OrderData(SQLModel, table=True):
     side: int
     price: int
     quantity: int
+
+
+class OrderPressure(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    ratio: int
+    overwrite: bool
 
 
 sqlite_file_name = "../orderbook.db"
@@ -80,7 +86,8 @@ def read_orders(
     limit: Annotated[int, Query(le=100)] = 100,
 ) -> list[OrderData]:
     query = select(OrderData)
-    query = query.offset(offset).limit(limit).order_by(OrderData.timestamp.desc())
+    query = query.offset(offset).limit(
+        limit).order_by(OrderData.timestamp.desc())
     entries = session.exec(query).all()
     if startdate:
         return [entry for entry in entries if entry.timestamp > startdate][::-1]
@@ -99,3 +106,20 @@ def create_pricevoldata(data: PriceVolData, session: SessionDep) -> PriceVolData
 @app.get("/")
 def read_index():
     return FileResponse("index.html")
+
+
+@app.post("/side-ratio/")
+def create_pressure(data: OrderPressure, session: SessionDep) -> OrderPressure:
+    order_pressure = session.exec(
+        select(OrderPressure).where(OrderPressure.id == 1)).first()
+
+    if not order_pressure:
+        raise HTTPException(
+            status_code=404, detail="OrderPressure with ID 1 not found")
+
+    order_pressure.ratio = data.ratio
+    session.add(order_pressure)
+    session.commit()
+    session.refresh(order_pressure)
+
+    return order_pressure

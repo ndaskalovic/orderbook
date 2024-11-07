@@ -78,17 +78,56 @@
             </div>
         </div>
         <div class="border-2 border-black row-span-1 col-span-2 grid grid-rows-6 h-full">
-            <div class="row-span-4 border-2 border-black content-center h-full">
+            <div class="row-span-5 border-2 border-black content-center h-full">
                 <div id="tester" class="w-full h-full"></div>
             </div>
-            <div class="row-span-2 border-2 border-black flex items-center">
-                <button class="pushable mx-auto" type="button"><span class="front bg-green-600">Flood Buys</span></button>
-                <button class="pushable mx-auto" type="button"><span class="front bg-red-600">Flood Sells</span></button>
-                <button class="pushable mx-auto" type="button"><span class="front bg-blue-500">Volume</span></button>
+            <div class="row-span-1 border-2 border-black flex items-center">
+                <button class="pushable mx-auto" type="button" id="buy-btn" onclick="postRequestWithDelay(600, 'buy-btn')"><span class="front bg-green-600">Flood Buys</span></button>
+                <button class="pushable mx-auto" type="button" id="sell-btn" onclick="postRequestWithDelay(400, 'sell-btn')"><span class="front bg-red-600">Flood Sells</span></button>
             </div>
         </div>
     </div>
     <script>
+            function postRequestWithDelay(ratioInt, btnId) {
+                const button = document.getElementById(btnId);
+                button.disabled = true;
+
+                function makeRequest(ratio, overwrite, callback) {
+                    fetch("/side-ratio/", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            "ratio": ratio,
+                            "overwrite": overwrite
+                        })
+                    })
+                        .then(response => {
+                            if (response.ok) {
+                                console.log("Request was successful:", response);
+                                callback();
+                            } else {
+                                console.error("Request failed:", response.statusText);
+                            }
+                        })
+                        .catch(error => console.error("Error with request:", error));
+                }
+
+                // First request
+                makeRequest(ratioInt, true, () => {
+                    // Wait 7 seconds and then make the second request
+                    setTimeout(() => {
+                        makeRequest(500, false, () => {
+                            button.disabled = false;
+                        });
+                    }, 10000);
+                });
+            }
+
+            function numberWithCommas(x) {
+                return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
             var trace1 = {
                 x: [],
                 y: [],
@@ -96,10 +135,20 @@
                 line: { color: 'rgba(31,119,180,1)' },
                 xaxis: 'x',
                 yaxis: 'y',
-                type: 'scatter'
+                type: 'scatter',
+                name: 'Price'
+            };
+            var trace2 = {
+                x: [],
+                y: [],
+                type: 'bar',
+                line: { color: 'rgba(31,119,180,1)' },
+                xaxis: 'x',
+                yaxis: 'y2',
+                name: 'Orders'
             };
 
-            var data = [trace1];
+            var data = [trace1, trace2];
 
             let currentTime = new Date().getTime();
             var layout = {
@@ -107,6 +156,7 @@
                 paper_bgcolor: "#e5e7eb",
                 plot_bgcolor: "#e5e7eb",
                 autosize: true,
+                grid: { rows: 2, columns: 1, roworder: 'top to bottom' },
                 margin: {
                     r: 10,
                     t: 25,
@@ -119,14 +169,33 @@
                     showgrid: false,
                     linewidth: 2,
                     linecolor: 'black',
-                    mirror: true
+                    mirror: 'all',
+                    matches: 'x2'
+                },
+                xaxis2: {
+                    type: 'date',
+                    showgrid: false,
+                    linewidth: 2,
+                    linecolor: 'black',
+                    anchor: 'y2',
+                    domain: [0, 1]
                 },
                 yaxis: {
-                    autorange: true,
                     type: 'linear',
                     linewidth: 2,
                     linecolor: 'black',
-                    mirror: true
+                    mirror: 'ticks',
+                    domain: [0.17, 1.0]  // Adjust height of the volume bar chart (20% of total height)
+                },
+                yaxis2: {
+                    type: 'linear',
+                    linewidth: 2,
+                    linecolor: 'black',
+                    mirror: 'ticks',
+                    // scaleanchor: 'x',
+                    // matches: 'x',
+                    // overlaying: 'y',
+                    domain: [0, 0.15]  // Adjust height of the volume bar chart (20% of total height)
                 }
             };
 
@@ -134,11 +203,11 @@
 
             Plotly.newPlot('tester', data, layout, config);
             
-            let lastFetched = "0";
+            let lastFetched = new Date((new Date().getTime()) - 1000*60*10).toISOString();
             let lastFetchedOrders = (new Date()).toISOString();
 
             setInterval(() => {
-                fetch("http://127.0.0.1:8000/orders/?startdate=" + lastFetchedOrders).then(
+                fetch("/orders/?startdate=" + lastFetchedOrders).then(
                     response => {
                         if (!response.ok) {
                             console.log("Network Error")
@@ -148,7 +217,6 @@
                 ).then(
                     data => {
                         const tableBody = document.getElementById("orders-table");
-                        // tableBody.innerHTML = "";
                         data.forEach(element => {
                             lastFetchedOrders = data[data.length-1].timestamp;
                             const row = document.createElement("tr");
@@ -197,9 +265,12 @@
                 )
             }, 500);
 
-            setInterval(function () {
+            let currentPrice = 0;
 
-                fetch("http://127.0.0.1:8000/price-vol-data/?startdate=" + lastFetched).then(
+            setInterval(function () {
+                lastFetched = new Date((new Date().getTime()) - 1000 * 60 * 10).toISOString();
+
+                fetch("/price-vol-data/?startdate=" + lastFetched).then(
                     response => {
                         if (!response.ok) {
                             console.log("Network Error")
@@ -208,29 +279,31 @@
                     }
                 ).then(
                     data => {
-                        data.forEach(element => {
-                            trace1.x.push(element.timestamp);
-                            trace1.y.push(element.price);
+                        if (data.length > 0) {
+                            
                             lastFetched = data[0].timestamp;
-                            document.getElementById("throughput").innerText = data[0].volume
-                        });
+                            currentPrice = data[0].price;
+                            document.getElementById('throughput').innerText = numberWithCommas(data[0].volume)
+                            const newX = data.map(element => element.timestamp);
+                            const newYPrice = data.map(element => element.price);
+                            const newYVolume = data.map(element => element.volume);
+                        
+                            Plotly.update('tester', {
+                                x: [newX, newX],
+                                y: [newYPrice, newYVolume]
+                            }, {}, [0, 1]);
+                        
+                            const now = lastFetched !== "0" ? new Date(lastFetched) : new Date();
+                            const startTime = new Date(now.getTime() - 1000 * 60 * 5).toISOString();
+                            const endTime = new Date(now.getTime() + 10 * 1000).toISOString();
+                            Plotly.relayout('tester', {
+                                'xaxis.range': [startTime, endTime],
+                                'yaxis.range': [currentPrice - 0.02*currentPrice, currentPrice + 0.02*currentPrice]
+                            });
+                        }
                     }
                 )
-                const now = lastFetched !== "0" ? new Date(lastFetched) : new Date();
-                const startTime = new Date(now.getTime() - 1000 * 60 * 5).toISOString();
-                const endTime = new Date(now.getTime() + 10 * 1000).toISOString();
-
-
-                Plotly.update('tester', {
-                    x: [trace1.x],
-                    y: [trace1.y]
-                });
-                Plotly.relayout('tester', {
-                    'xaxis.range': [startTime, endTime],
-                    'yaxis.autorange': true
-                });
             }, 1000);
-
 
             window.onresize = function () {
                     Plotly.relayout('tester', {

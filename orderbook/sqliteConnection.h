@@ -1,6 +1,7 @@
 #include <sqlite3.h>
 #include <iostream>
 #include <cstdint>
+
 #include "usings.h"
 #include "orderType.h"
 #include "side.h"
@@ -11,6 +12,7 @@ class DatabaseConnection
         sqlite3 *DB;
         std::string insertPriceVolDataQuery;
         std::string insertOrderQuery;
+        std::string getSideRatioQuery;
 
     public:
         DatabaseConnection(const char *dbPath)
@@ -21,6 +23,7 @@ class DatabaseConnection
             {
                 std::cerr << "Could not open DB at " << dbPath << std::endl;
             }
+            getSideRatioQuery = "SELECT ratio FROM orderpressure WHERE id = 1;";
             insertPriceVolDataQuery = "INSERT INTO pricevoldata (timestamp, volume, price) VALUES (?, ?, ?);";
             insertOrderQuery = "INSERT INTO orderdata (timestamp, ordertype, side, price, quantity) VALUES (?, ?, ?, ?, ?);";
         };
@@ -45,6 +48,18 @@ class DatabaseConnection
             sqlite3_bind_int(stmt, 5, quantity);
             int s = sqlite3_step(stmt);
             sqlite3_finalize(stmt);
+        };
+        int GetOrderPressureRatio()
+        {
+            sqlite3_stmt *stmt;
+            int result = 500;
+            sqlite3_prepare_v3(DB, getSideRatioQuery.c_str(), -1, -1, &stmt, nullptr);
+            if (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                result = sqlite3_column_int(stmt, 0);
+            }
+            sqlite3_finalize(stmt);
+            return result;
         };
         ~DatabaseConnection()
         {

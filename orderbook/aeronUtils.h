@@ -71,8 +71,8 @@ AeronSubscription connectToAeronSubscription(Settings settings)
         << "Subscription channel status (id=" << subscription->channelStatusId() << ") "
         << (channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE ? "ACTIVE" : std::to_string(channelStatus))
         << std::endl;
-    AeronSubscription aeronH(aeron, id, subscription);
-    return aeronH;
+    AeronSubscription aeronConn(aeron, id, subscription);
+    return aeronConn;
 }
 
 AeronPublication connectToAeronPublication(Settings settings)
@@ -94,6 +94,6 @@ AeronPublication connectToAeronPublication(Settings settings)
     std::cout << "Publication channel status (id=" << publication->channelStatusId() << ") "
               << (channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE ? "ACTIVE" : std::to_string(channelStatus))
               << std::endl;
-    AeronPublication aeronH(aeron, id, publication);
-    return aeronH;
+    AeronPublication aeronConn(aeron, id, publication);
+    return aeronConn;
 }

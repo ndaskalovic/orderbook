@@ -2,10 +2,6 @@
 #include <thread>
 #include <csignal>
 #include <iostream>
-#include <memory>
-#include <map>
-#include <list>
-#include <unordered_map>
 
 #include "config.h"
 #include "Aeron.h"
@@ -13,8 +9,6 @@
 #include "concurrent/SleepingIdleStrategy.h"
 #include "messages.h"
 #include "usings.h"
-#include "trade.h"
-#include "tradeInfo.h"
 #include "orderType.h"
 #include "side.h"
 #include "order.h"
@@ -28,6 +22,7 @@ typedef std::array<std::uint8_t, 16> buffer_t;
 
 std::atomic<bool> running(true);
 std::atomic<int> oid = 0;
+// 5 most recent orders for logging
 std::array<OrderPointer, 5> recentOrders;
 std::mutex bufferMutex;
 OrderBook book;
@@ -49,34 +44,42 @@ fragment_handler_t addOrderToBook()
         OrderPointer orderp = std::make_shared<Order>(order);
         // may incur overhead
         if (book.AddOrder(orderp))
+        {
             std::scoped_lock bufLock{bufferMutex};
-        recentOrders[oid % 5] = orderp;
+            recentOrders[oid % 5] = orderp;
+        }
         oid++;
     };
 }
 
-void dbThreadTask(Settings *settings, AeronPublication *publication)
+void priceBroadcastTask(Settings *settings, AeronPublication *publication)
 {
     static int idcount = 0;
-    DatabaseConnection DB(configuration::DATABASE_PATH);
+    DatabaseConnection DB(settings->databasePath);
     AERON_DECL_ALIGNED(buffer_t buffer, 16);
     concurrent::AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     PriceMessage &data = srcBuffer.overlayStruct<PriceMessage>(0);
     long msgLength = sizeof(data);
+    while (running)
+    {
+        data.price = book.GetCurrentPrice();
+        const std::int64_t result = publication->publication->offer(srcBuffer, 0, msgLength);
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
+    }
+}
+
+void dbThreadTask(Settings *settings)
+{
+    static int idcount = 0;
+    DatabaseConnection DB(configuration::DATABASE_PATH);
     Price currentPrice;
     while (running)
     {
-        for (int i = 0; i < 1000; i++)
-        {
-            currentPrice = book.GetCurrentPrice();
-            data.price = currentPrice;
-            const std::int64_t result = publication->publication->offer(srcBuffer, 0, msgLength);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            /* code */
-        }
+        currentPrice = book.GetCurrentPrice();
         const auto now = std::chrono::system_clock::now();
         auto fnow = std::format("{:%FT%TZ}", now);
         DB.InsertPriceVolData(fnow, oid - idcount, currentPrice);
+        // at least 5 new orders added since last check
         if ((oid - idcount) > 5)
         {
             std::scoped_lock bufLock{bufferMutex};
@@ -89,25 +92,27 @@ void dbThreadTask(Settings *settings, AeronPublication *publication)
             };
         }
         book.PrintBook();
-        std::cout << "Price: " << currentPrice << ", Volume: " << oid - idcount << "\n\n";
+        std::cout << "Price: " << currentPrice << ", Volume: " << oid - idcount << " Size: " << book.GetSize() << "\n\n";
 
         idcount = oid;
-        
-    }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
 }
 
 int main(int argc, char **argv)
 {
+    std::shared_ptr<std::thread> priceBroadcastThread;
     std::shared_ptr<std::thread> dbThread;
     Price startPrice(10000);
-    srand(time(NULL));
-    for (int i = 1; i < 4; i++)
+    srand(static_cast<unsigned>(std::time(0)));
+    // start off the book with some random volume on both sides
+    for (int i = 1; i < 1000; i++)
     {
-        Order buy = Order(OrderType::LIMIT_ORDER, oid, Side::BUY, rand() % 10 + 100, startPrice - i);
+        Order buy = Order(OrderType::LIMIT_ORDER, oid, Side::BUY, rand() % 1000 + 100, startPrice - i);
         OrderPointer buyPointer = std::make_shared<Order>(buy);
         book.AddOrder(buyPointer);
         oid++;
-        Order sell = Order(OrderType::LIMIT_ORDER, oid, Side::SELL, rand() % 10 + 100, startPrice + i);
+        Order sell = Order(OrderType::LIMIT_ORDER, oid, Side::SELL, rand() % 1000 + 100, startPrice + i);
         OrderPointer sellPointer = std::make_shared<Order>(sell);
         book.AddOrder(sellPointer);
         oid++;
@@ -116,28 +121,34 @@ int main(int argc, char **argv)
     try
     {
         Settings settings(configuration::DEFAULT_CHANNEL, configuration::DEFAULT_STREAM_ID, configuration::DATABASE_PATH, configuration::DEFAULT_LINGER_TIMEOUT_MS);
-        Settings dataThreadSettings(configuration::DEFAULT_PRICE_DATA_CHANNEL, configuration::DEFAULT_PRICE_DATA_STREAM_ID, configuration::DATABASE_PATH, configuration::DEFAULT_LINGER_TIMEOUT_MS);
+        Settings dataSettings(configuration::DEFAULT_PRICE_DATA_CHANNEL, configuration::DEFAULT_PRICE_DATA_STREAM_ID, configuration::DATABASE_PATH, configuration::DEFAULT_LINGER_TIMEOUT_MS);
 
         std::cout << "Subscribing to channel " << settings.channel << " on Stream ID " << settings.streamId << std::endl;
 
-        AeronPublication dataPublication = connectToAeronPublication(dataThreadSettings);
+        AeronPublication dataPublication = connectToAeronPublication(dataSettings);
 
-        AeronSubscription aeronSubscription = connectToAeronSubscription(settings);
+        AeronSubscription orderSubscription = connectToAeronSubscription(settings);
         signal(SIGINT, sigIntHandler);
 
         FragmentAssembler fragmentAssembler(addOrderToBook());
         fragment_handler_t handler = fragmentAssembler.handler();
         SleepingIdleStrategy idleStrategy(IDLE_SLEEP_MS);
 
-        Subscription &subscriptionRef = *aeronSubscription.subscription;
+        Subscription &subscriptionRef = *orderSubscription.subscription;
 
-        dbThread = std::make_shared<std::thread>(dbThreadTask, &dataThreadSettings, &dataPublication);
+        priceBroadcastThread = std::make_shared<std::thread>(priceBroadcastTask, &dataSettings, &dataPublication);
+        dbThread = std::make_shared<std::thread>(dbThreadTask, &dataSettings);
 
         aeron::util::OnScopeExit tidy(
             [&]()
             {
                 running = false;
 
+                if (nullptr != priceBroadcastThread && priceBroadcastThread->joinable())
+                {
+                    priceBroadcastThread->join();
+                    priceBroadcastThread = nullptr;
+                }
                 if (nullptr != dbThread && dbThread->joinable())
                 {
                     dbThread->join();
@@ -147,7 +158,7 @@ int main(int argc, char **argv)
 
         while (running)
         {
-            const int fragmentsRead = aeronSubscription.subscription->poll(handler, FRAGMENTS_LIMIT);
+            const int fragmentsRead = orderSubscription.subscription->poll(handler, FRAGMENTS_LIMIT);
             idleStrategy.idle(fragmentsRead);
         }
     }
