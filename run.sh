@@ -4,6 +4,11 @@
 
 SESSION="orderbookapp"
 
+cd orderbook
+make clean build
+cd ..
+
+tmux kill-session -t $SESSION
 tmux new-session -d -s $SESSION
 
 # should have venv in same dir as this script (root dir)
@@ -20,4 +25,4 @@ tmux send-keys "cd orderbook && ./build/simulationClient" C-m
 
 tmux select-layout tiled
 
-tmux attach -t $SESSION
+# tmux attach -t $SESSION

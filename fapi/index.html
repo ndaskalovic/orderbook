@@ -196,14 +196,14 @@
                 linewidth: 2,
                 linecolor: 'black',
                 mirror: 'ticks',
-                domain: [0.17, 1.0]  // Adjust height of the volume bar chart (20% of total height)
+                domain: [0.17, 1.0]
             },
             yaxis2: {
                 type: 'linear',
                 linewidth: 2,
                 linecolor: 'black',
                 mirror: 'ticks',
-                domain: [0, 0.15]  // Adjust height of the volume bar chart (20% of total height)
+                domain: [0, 0.15]
             }
         };
 
@@ -308,20 +308,6 @@
                         Plotly.relayout('tester', {
                             'xaxis.range': [startTime, endTime],
                             'yaxis.range': [currentPrice - 0.02 * currentPrice, currentPrice + 0.02 * currentPrice],
-                            // 'annotations': [
-                            //     {
-                            //         x: newX[0],
-                            //         y: newYPrice[0],
-                            //         xref: 'x',
-                            //         yref: 'y',
-                            //         text: `${newYPrice[0]}`,
-                            //         showarrow: true,
-                            //         arrowhead: 7,
-                            //         ax: 0,
-                            //         ay:100,
-                            //         font: { color: 'black' }
-                            //     }
-                            // ]
                         });
                     }
                 }
