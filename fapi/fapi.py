@@ -122,8 +122,7 @@ def create_pressure(data: OrderPressure, session: SessionDep) -> OrderPressure:
         select(OrderPressure).where(OrderPressure.id == 1)).first()
 
     if not order_pressure:
-        raise HTTPException(
-            status_code=404, detail="OrderPressure with ID 1 not found")
+        order_pressure = OrderPressure(id=1, ratio=500, overwrite=False)
 
     order_pressure.ratio = data.ratio
     session.add(order_pressure)

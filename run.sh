@@ -6,7 +6,7 @@ SESSION="orderbookapp"
 
 rm orderbook.db
 cd orderbook
-make clean build
+make build
 cd ..
 
 tmux kill-session -t $SESSION
