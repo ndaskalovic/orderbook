@@ -4,6 +4,7 @@
 
 SESSION="orderbookapp"
 
+rm orderbook.db
 cd orderbook
 make clean build
 cd ..
@@ -16,6 +17,7 @@ tmux send-keys "cd fapi && venv/bin/python -m fastapi run fapi.py" C-m
 
 tmux split-window -v
 tmux send-keys "aeronmd" C-m
+sleep 5
 
 tmux split-window -h
 tmux send-keys "cd orderbook && ./build/server" C-m

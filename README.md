@@ -9,3 +9,6 @@
 - ~~Front end buttons working~~
 - ~~Displaying orders on frontend~~
 - multiple orders per message
+- prevent multiple users from mashing buy or sell pressure with overwrite field
+- easter egg
+- price control algo from frontend
