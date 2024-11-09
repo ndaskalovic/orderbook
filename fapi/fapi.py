@@ -97,13 +97,13 @@ def read_orders(
     return entries[::-1]
 
 
-@app.post("/orderbook-api/price-vol-data/")
-def create_pricevoldata(data: PriceVolData, session: SessionDep) -> PriceVolData:
-    data.timestamp = datetime.fromisoformat(data.timestamp)
-    session.add(data)
-    session.commit()
-    session.refresh(data)
-    return data
+# @app.post("/orderbook-api/price-vol-data/")
+# def create_pricevoldata(data: PriceVolData, session: SessionDep) -> PriceVolData:
+#     data.timestamp = datetime.fromisoformat(data.timestamp)
+#     session.add(data)
+#     session.commit()
+#     session.refresh(data)
+#     return data
 
 
 @app.get("/")

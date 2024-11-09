@@ -78,6 +78,7 @@ void orderThreadTask(Settings *settings, AeronPublication *publication)
                 data.price = data.side == Side::BUY ? currentPrice + p * -1 : currentPrice + p;
                 data.quantity = rand() % 100 + 1;
             } else {
+                // higher range of prices to roughly match average volume of limit orders
                 data.quantity = rand() % 569 + 1;
             }
             int result = publication->publication->offer(srcBuffer, 0, msgLength);
