@@ -12,3 +12,4 @@
 - prevent multiple users from mashing buy or sell pressure with overwrite field
 - easter egg
 - price control algo from frontend
+- pop up info on pressure buttons on frontend

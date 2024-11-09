@@ -21,7 +21,7 @@ using namespace aeron;
 typedef std::array<std::uint8_t, 16> buffer_t;
 
 std::atomic<bool> running(true);
-std::atomic<int> oid = 0;
+std::atomic<std::uint64_t> oid = 1;
 // 5 most recent orders for logging
 std::array<OrderPointer, 5> recentOrders;
 std::mutex bufferMutex;
