@@ -7,9 +7,7 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_executable(OrderBookTest OrderBookTest.cpp)
-
-# target_include_directories(OrderBookTest PRIVATE ${PROJECT_SOURCE_DIR}/src)
+add_executable(OrderBookTest orderBookTest.cpp)
 
 target_link_libraries(OrderBookTest PRIVATE OrderBookLib gtest gtest_main pthread)
 
