@@ -2,9 +2,9 @@
 
 This repository contains a c++ order book implementation supporting a variety of order types in a client-server architecture with an Aeron communication layer. A live simulation using this order book can be found at [this](https://nickdaskalovic.com/orderbook) link.
 
-## Order Book
+## Design
 
-### Design
+### The Book
 
 The [orderbook](orderbook/src/orderBook.h) maintains two `std::map`s for the bid and ask queues ordered by price descending and ascending respectively. This allows for quick and easy access to the best bids and asks for matching. Each entry in these maps is an ordered `std::list` of orders which acts as a queue with the left most value being of highest priority. This structure creates an overall price-time priority system in the order book.
 
@@ -14,13 +14,15 @@ To allow for multi-threaded access, the order book also maintains an `std::mutex
 
 The [Aeron](https://github.com/real-logic/aeron) library provides UDP unicast and multicast message transport best suited to performance sensitive applications. Both of these modes are used in this project to allow clients to submit orders to the central server while also receiving real-time price data from it. A common library of utilities for interfacing with the Aeron library can be found in [aeronUtils.cpp](orderbook/aeronUtils.h). At a high level, there are two Aeron publications/subscriptions used in this project - one by clients to send orders to the server and one by the server to send live price data to all clients. Applications running a publication and subscription at the same time do so via additional threads.
 
-### SQLite
+### Database
 
-Basic logging of order throughput, current asset price and most recent orders is done through a [small sqlite interface](orderbook/sqliteConnection.h) as well as a thread-safe buffer of the most recent orders.
+Basic logging of order throughput, current asset price and most recent orders is done through a [small SQLite interface](orderbook/sqliteConnection.h) as well as a thread-safe buffer of the most recent orders.
 
-## Live Simulation
+### Simulation
 
 The custom [simulation client](orderbook/simulationClient.cpp) provides a maximum throughtput stream of orders to the server and can be used to simulate real-time trading on the book. The prices of limit orders are modelled using a gamma distribution with parameters $\alpha = 3$ and $\beta = 2$ to mimic the spread of orders around a current asset price often found in real exchanges. By default, an equal amount of buy and sell orders are sent to the book to prevent biased price action when no external influence is applied. 
+
+## Web App
 
 A [FastAPI app](fapi/fapi.py) sits between the backend (order book + db) and frontend [website](fapi/index.html). It mostly serves only GET requests to the frontend but has one POST endpoint to allow users to apply buy or sell pressure to the book and watch the consequenting price action. The pressue is applied by shifting the volume of buy or sell orders to favour one or the other by 7% (e.g 57% Buy orders and 43% sell orders) for a few seconds. The current link to the demo can be found here [here](https://nickdaskalovic.com/orderbook).
 
