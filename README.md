@@ -8,7 +8,7 @@ This repository contains a c++ order book implementation supporting a variety of
 
 The [orderbook](orderbook/src/orderBook.h) maintains two `std::map`s for the bid and ask queues ordered by price descending and ascending respectively. This allows for quick and easy access to the best bids and asks for matching. Each entry in these maps is an ordered `std::list` of orders which acts as a queue with the left most value being of highest priority. This structure creates an overall price-time priority system in the order book.
 
-To allow for multi-threaded access, the order book also maintains an `std::mutex` along with locks in sensitive public methods.
+A [server](orderbook/server.cpp) application uses Aeron to wait for incoming orders and adds them to the book. To allow for multi-threaded access, the order book also maintains an `std::mutex` along with locks in sensitive public methods.
 
 ### Aeron
 
@@ -24,7 +24,7 @@ The custom [simulation client](orderbook/simulationClient.cpp) provides a maximu
 
 ## Web App
 
-A [FastAPI app](fapi/fapi.py) sits between the backend (order book + db) and frontend [website](fapi/index.html). It mostly serves only GET requests to the frontend but has one POST endpoint to allow users to apply buy or sell pressure to the book and watch the consequenting price action. The pressue is applied by shifting the volume of buy or sell orders to favour one or the other by 7% (e.g 57% Buy orders and 43% sell orders) for a few seconds. The current link to the demo can be found here [here](https://nickdaskalovic.com/orderbook).
+A [FastAPI app](fapi/fapi.py) sits between the backend (order book + db) and frontend [website](fapi/index.html). It mostly serves only GET requests to the frontend but has one POST endpoint to allow users to apply buy or sell pressure to the book and watch the consequenting price action. The pressure is applied by shifting the volume of buy or sell orders to favour one or the other by 7% (e.g 57% Buy orders and 43% sell orders) for a few seconds. The current link to the demo can be found here [here](https://nickdaskalovic.com/orderbook).
 
 The live demo is currently deployed on a VPS with only 2 Intel Xeon cores at 2.2GHz and is able to achieve an average throughput of ~80k orders/second.
 

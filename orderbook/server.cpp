@@ -70,7 +70,7 @@ void priceBroadcastTask(Settings *settings, AeronPublication *publication)
 
 void dbThreadTask(Settings *settings)
 {
-    static int idcount = 0;
+    static std::uint64_t idcount = 0;
     DatabaseConnection DB(configuration::DATABASE_PATH);
     Price currentPrice;
     while (running)
