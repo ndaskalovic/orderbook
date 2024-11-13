@@ -12,7 +12,7 @@ cd ..
 tmux kill-session -t $SESSION
 tmux new-session -d -s $SESSION
 
-# should have venv in same dir as this script (root dir)
+# should have venv in fapi/ dir
 tmux send-keys "cd fapi && venv/bin/python -m fastapi run fapi.py" C-m
 
 tmux split-window -v
