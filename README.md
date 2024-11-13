@@ -26,7 +26,7 @@ The custom [simulation client](orderbook/simulationClient.cpp) provides a maximu
 
 A [FastAPI app](fapi/fapi.py) sits between the backend (order book + db) and frontend [website](fapi/index.html). It mostly serves only GET requests to the frontend but has one POST endpoint to allow users to apply buy or sell pressure to the book and watch the consequenting price action. The pressure is applied by shifting the volume of buy or sell orders to favour one or the other by 7% (e.g 57% Buy orders and 43% sell orders) for a few seconds. The current link to the demo can be found here [here](https://nickdaskalovic.com/orderbook).
 
-The live demo is currently deployed on a VPS with only 2 Intel Xeon cores at 2.2GHz and is able to achieve an average throughput of ~80k orders/second.
+The live demo is currently deployed on a VPS with only 1 Intel Xeon core (2 vCPU) at 2.2GHz and is able to achieve an average throughput of ~80k orders/second.
 
 ## Building
 
